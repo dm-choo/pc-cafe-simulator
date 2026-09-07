@@ -480,7 +480,7 @@ export async function createEngine(canvas: HTMLCanvasElement) {
     hadCustomers = game.customers.length > 0;
     renderer.render(scene, snapshot.mode === "layout" ? overhead : camera);
     renderDirty = false;
-    if (now - lastUI > 250) {
+    if (now - lastUI > 250 || blocked()) {
       lastUI = now;
       publish({
         calls: renderer.info.render.calls,
