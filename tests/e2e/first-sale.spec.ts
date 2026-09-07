@@ -1,4 +1,6 @@
 import { test, expect } from "@playwright/test";
+import { installFirstShop } from "./setup-shop";
+import { STARTING_CASH } from "../../src/content/shop";
 import type { GameState } from "../../src/sim/game";
 test("FIRST-SALE: 카운터 개점 → 손님 착석 → 첫 결제 → 마감", async ({
   page,
@@ -20,6 +22,9 @@ test("FIRST-SALE: 카운터 개점 → 손님 착석 → 첫 결제 → 마감",
   await page
     .getByRole("button", { name: "마우스 잠금 없이 시작", exact: true })
     .click();
+  await expect(page.getByLabel("좌석 현황")).toHaveText("0/0석");
+  await installFirstShop(page);
+  await page.screenshot({ path: testInfo.outputPath("first-installed-shop.png") });
   await page.mouse.move(650, 350);
   await page.mouse.down();
   await page.mouse.move(1390, 620, { steps: 10 });
@@ -67,11 +72,12 @@ test("FIRST-SALE: 카운터 개점 → 손님 착석 → 첫 결제 → 마감",
   await expect
     .poll(async () => (await read()).game.served, { timeout: 60000 })
     .toBeGreaterThan(0);
-  await expect(page.getByLabel("보유 현금")).not.toHaveText("0원");
+  await expect(page.getByLabel("보유 현금")).toHaveText("2,401,500원");
   await page.keyboard.press("KeyB");
   await page.screenshot({ path: testInfo.outputPath("first-sale.png") });
   const result = await read();
-  expect(result.game.cash).toBe(result.game.served * 1500);
+  expect(result.game.revenue).toBe(result.game.served * 1500);
+  expect(result.game.cash).toBe(STARTING_CASH - result.game.spent + result.game.revenue);
   expect(new Set(result.game.receipts.map((r) => r.customerId)).size).toBe(
     result.game.receipts.length,
   );

@@ -1,0 +1,12 @@
+Texture assets by Poly Haven, licensed CC0 1.0 Universal.
+https://polyhaven.com/license
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Wood Table Worn — Dimitrios Savva (photography), Rico Cilliers (processing)
+https://polyhaven.com/a/wood_table_worn
+Plastered Wall 03 — https://polyhaven.com/a/plastered_wall_03
+Worn Concrete Floor — https://polyhaven.com/a/worn_concrete_floor
+
+1K diffuse, OpenGL normal and roughness maps. Original publisher checksums
+and reproducible local delivery are recorded in assets/materials.json.
+Game geometry, code, logos and UI are separate original project content.

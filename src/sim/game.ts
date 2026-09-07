@@ -1,4 +1,5 @@
-import { SEATS, localPoint, type Point } from "../content/cafe";
+import { SEATS, ROOM_OBSTACLES, furnitureObstacles, localPoint, type Point } from "../content/cafe";
+import { CATALOG, STARTING_CASH, type ShopItem } from "../content/shop";
 import { planRoute } from "./navigation";
 export const ENTRY: Point = { x: 0, z: 6.25 };
 export const SESSION_TICKS = 800; // 40 sim seconds represents a one-hour trial session.
@@ -20,7 +21,11 @@ export type Receipt = Readonly<{
   tick: number;
 }>;
 export type GameState = Readonly<{
-  version: 2;
+  version: 3;
+  counter: boolean;
+  inventory: Readonly<Record<ShopItem, number>>;
+  spent: number;
+  revenue: number;
   tick: number;
   selectedSeat: string | null;
   open: boolean;
@@ -41,23 +46,30 @@ export type Command =
   | { type: "open" }
   | { type: "close" }
   | { type: "arrive" }
+  | { type: "buy"; item: ShopItem }
+  | { type: "install-counter" }
+  | { type: "install-seat"; seatId: string }
   | { type: "finish-session"; customerId: number };
 export function createGame(): GameState {
   return {
-    version: 2,
+    version: 3,
+    counter: false,
+    inventory: { counter: 0, seat: 0 },
+    spent: 0,
+    revenue: 0,
     tick: 0,
     selectedSeat: null,
     open: false,
     nextArrival: 0,
     nextCustomerId: 1,
     customers: [],
-    seats: Object.fromEntries(SEATS.map((s) => [s.id, null])),
-    cash: 0,
+    seats: {},
+    cash: STARTING_CASH,
     served: 0,
     lostFull: 0,
     lostPath: 0,
     receipts: [],
-    notice: "카운터에서 첫 영업을 시작하세요",
+    notice: "빈 매장입니다. 구매 메뉴에서 첫 설비를 준비하세요",
   };
 }
 function release(state: GameState, c: Customer): GameState {
@@ -71,6 +83,31 @@ function release(state: GameState, c: Customer): GameState {
 }
 export function command(state: GameState, action: Command): GameState {
   switch (action.type) {
+    case "buy": {
+      const item = CATALOG[action.item];
+      if (!item) return state;
+      if (action.item === "counter" && (state.counter || state.inventory.counter))
+        return { ...state, notice: "카운터는 한 세트만 필요합니다" };
+      if (action.item === "seat" && Object.keys(state.seats).length + state.inventory.seat >= SEATS.length)
+        return { ...state, notice: "현재 매장은 최대 12석까지 설치할 수 있습니다" };
+      if (state.cash < item.price) return { ...state, notice: "구매할 자금이 부족합니다" };
+      return { ...state, cash: state.cash - item.price, spent: state.spent + item.price,
+        inventory: { ...state.inventory, [action.item]: state.inventory[action.item] + 1 },
+        notice: `${item.name} 구매 완료 · 배치 메뉴에서 설치하세요` };
+    }
+    case "install-counter":
+    case "install-seat": {
+      if (state.open || state.customers.length)
+        return { ...state, notice: "영업을 마치고 모든 손님이 퇴장한 뒤 설치하세요" };
+      if (action.type === "install-counter") {
+        if (state.counter || state.inventory.counter < 1) return state;
+        return { ...state, counter: true, inventory: { ...state.inventory, counter: state.inventory.counter - 1 }, notice: "카운터 설치 완료" };
+      }
+      if (!SEATS.some(s => s.id === action.seatId) || action.seatId in state.seats || state.inventory.seat < 1) return state;
+      return { ...state, seats: { ...state.seats, [action.seatId]: null },
+        inventory: { ...state.inventory, seat: state.inventory.seat - 1 },
+        selectedSeat: action.seatId, notice: `${action.seatId}번 좌석 설치 완료 · 카운터에서 영업을 시작하세요` };
+    }
     case "reset":
       return createGame();
     case "select-seat":
@@ -79,6 +116,8 @@ export function command(state: GameState, action: Command): GameState {
         ? state
         : { ...state, selectedSeat: action.seatId };
     case "open":
+      if (!state.counter || !Object.keys(state.seats).length)
+        return { ...state, notice: "카운터와 좌석 1개 이상을 설치해야 영업할 수 있습니다" };
       return state.open
         ? state
         : {
@@ -108,7 +147,7 @@ export function command(state: GameState, action: Command): GameState {
         };
       for (const seat of free) {
         const approach = localPoint(seat, 0.72, 0.8),
-          route = planRoute(ENTRY, approach);
+          route = planRoute(ENTRY, approach, [...ROOM_OBSTACLES, ...furnitureObstacles(Object.keys(state.seats), state.counter)]);
         if (!route) continue;
         const id = state.nextCustomerId;
         const c: Customer = {
@@ -126,7 +165,7 @@ export function command(state: GameState, action: Command): GameState {
           nextCustomerId: id + 1,
           customers: [...state.customers, c],
           seats: { ...state.seats, [seat.id]: id },
-          notice: `손님이 ${seat.id}번 자리로 이동합니다`,
+          notice: `${seat.id}번 자리에 손님을 배정했습니다`,
         };
       }
       return {
@@ -154,6 +193,7 @@ export function command(state: GameState, action: Command): GameState {
       return {
         ...next,
         cash: state.cash + receipt.amount,
+        revenue: state.revenue + receipt.amount,
         served: state.served + 1,
         receipts: [...state.receipts, receipt].slice(-30),
         customers: state.customers.map((v) =>

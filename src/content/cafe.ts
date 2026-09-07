@@ -28,7 +28,7 @@ export function localPoint(seat: Seat, x: number, z: number): Point {
     z: seat.z - Math.sin(seat.rotation) * x + Math.cos(seat.rotation) * z,
   };
 }
-export const OBSTACLES: readonly Obstacle[] = [
+export const ROOM_OBSTACLES: readonly Obstacle[] = [
   { x: 0, z: -7, width: 10.4, depth: 0.2, height: 3.2, y: 1.6 },
   { x: 0, z: 7, width: 10.4, depth: 0.2, height: 3.2, y: 1.6 },
   ...[-5, 5].map((x) => ({
@@ -39,9 +39,11 @@ export const OBSTACLES: readonly Obstacle[] = [
     height: 3.2,
     y: 1.6,
   })),
-  COUNTER,
-  { x: 3.3, z: 6.65, width: 2.9, depth: 0.6, height: 2, y: 1 },
-  ...SEATS.flatMap((seat) => [
+];
+export function furnitureObstacles(ids: readonly string[], counter: boolean): Obstacle[] {
+  return [
+  ...(counter ? [COUNTER, { x: 3.3, z: 6.65, width: 2.9, depth: 0.6, height: 2, y: 1 }] : []),
+  ...SEATS.filter(s => ids.includes(s.id)).flatMap((seat) => [
     { x: seat.x, z: seat.z, width: 0.76, depth: 1.4, height: 1.3, y: 0.65 },
     {
       ...localPoint(seat, 0, 0.8),
@@ -51,4 +53,6 @@ export const OBSTACLES: readonly Obstacle[] = [
       y: 0.6,
     },
   ]),
-];
+  ];
+}
+export const OBSTACLES = [...ROOM_OBSTACLES, ...furnitureObstacles(SEATS.map(s => s.id), true)];

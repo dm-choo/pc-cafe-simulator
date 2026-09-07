@@ -1,5 +1,8 @@
 import * as THREE from "three";
-import { SEATS, SPAWN } from "../content/cafe";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { loadMaterials } from "../render/materials";
+import { SEATS, SPAWN, furnitureObstacles } from "../content/cafe";
+import type { ShopItem } from "../content/shop";
 import {
   createGame,
   command,
@@ -10,7 +13,6 @@ import {
 import { createCustomerView } from "../render/customers";
 import { loadSeatAsset } from "../render/seat-asset";
 import { buildCafe } from "../render/cafe";
-import { placementReason } from "../sim/layout";
 import { FixedClock } from "./clock";
 import { createPhysics } from "./physics";
 export type Mode =
@@ -18,6 +20,7 @@ export type Mode =
   | "play"
   | "pause"
   | "counter"
+  | "shop"
   | "layout"
   | "settings"
   | "seat"
@@ -52,17 +55,24 @@ export async function createEngine(canvas: HTMLCanvasElement) {
   });
   renderer.setClearColor("#171f25");
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.3;
+  renderer.toneMappingExposure = 1.05;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   const scene = new THREE.Scene();
   scene.fog = new THREE.Fog("#303d41", 12, 29);
-  const cafe = buildCafe(scene);
-  await loadSeatAsset(scene);
+  const surfaces = await loadMaterials();
+  const cafe = buildCafe(scene, surfaces);
+  const seatView = await loadSeatAsset(scene, surfaces);
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const environmentRoom = new RoomEnvironment();
+  const environment = pmrem.fromScene(environmentRoom, 0.04);
+  scene.environment = environment.texture;
+  scene.environmentIntensity = 0.45;
+  environmentRoom.dispose(); pmrem.dispose();
   const customerView = createCustomerView(scene);
-  scene.add(new THREE.HemisphereLight("#dbe9f1", "#787167", 2.1));
-  const keyLight = new THREE.DirectionalLight("#ffedd4", 3.1);
-  keyLight.position.set(-2, 6, 4);
+  scene.add(new THREE.HemisphereLight("#dbe9f1", "#585552", 0.85));
+  const keyLight = new THREE.DirectionalLight("#ffedd4", 1.8);
+  keyLight.position.set(-2, 3.08, 1);
   keyLight.castShadow = true;
   // G001 furniture is static. Re-render this map when geometry starts moving in G002.
   keyLight.shadow.autoUpdate = false;
@@ -110,9 +120,7 @@ export async function createEngine(canvas: HTMLCanvasElement) {
   ghost.visible = false;
   scene.add(ghost);
   const ray = new THREE.Raycaster(),
-    mouse = new THREE.Vector2(),
-    floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0),
-    hit = new THREE.Vector3();
+    mouse = new THREE.Vector2();
   const listeners = new Set<() => void>(),
     keys = new Set<string>(),
     events = new AbortController(),
@@ -156,7 +164,18 @@ export async function createEngine(canvas: HTMLCanvasElement) {
     listeners.forEach((fn) => fn());
   };
   const send = (action: Command) => {
+    const before = game;
     game = command(game, action);
+    if (before.seats !== game.seats || before.counter !== game.counter) {
+      const ids = Object.keys(game.seats);
+      // Only rebuild colliders/render instances when the installation set changes.
+      if (before.counter !== game.counter || ids.join() !== Object.keys(before.seats).join()) {
+        seatView.sync(ids);
+        cafe.sync(ids, game.counter);
+        physics.syncFurniture(ids, game.counter);
+        keyLight.shadow.needsUpdate = true;
+      }
+    }
     publish();
   };
   const blocked = () => snapshot.mode !== "play" || document.hidden;
@@ -166,6 +185,7 @@ export async function createEngine(canvas: HTMLCanvasElement) {
     clock.reset();
     playerClock.reset();
     cafe.ceiling.visible = mode !== "layout";
+    cafe.plots.visible = mode === "layout";
     ghost.visible = false;
     ring.visible = false;
     publish({ mode, target: null, preview: "", message: "" });
@@ -221,18 +241,6 @@ export async function createEngine(canvas: HTMLCanvasElement) {
     // DOM controls can become available before the first overhead render.
     overhead.updateMatrixWorld(true);
     ray.setFromCamera(mouse, overhead);
-  }
-  function layoutHover(event: MouseEvent) {
-    locate(event);
-    const seat = SEATS.find((s) => s.id === game.selectedSeat);
-    if (!seat || !ray.ray.intersectPlane(floorPlane, hit)) return;
-    const x = Math.round(hit.x * 4) / 4,
-      z = Math.round(hit.z * 4) / 4;
-    ghost.position.set(x, 0.4, z);
-    ghost.visible = true;
-    const reason = placementReason(seat, x, z);
-    ghostMaterial.color.set(reason ? "#e88e78" : "#a1d3b3");
-    publish({ preview: reason ?? "배치 가능 · 미리보기만 표시됩니다" });
   }
   window.addEventListener("resize", resize, { signal: events.signal });
   document.addEventListener(
@@ -307,6 +315,7 @@ export async function createEngine(canvas: HTMLCanvasElement) {
       }
       if (e.code === "KeyE") interact();
       if (e.code === "KeyB" && snapshot.mode === "play") setMode("layout");
+      if (e.code === "KeyN" && snapshot.mode === "play") setMode("shop");
       if (e.code === "KeyP" && snapshot.mode === "play") setMode("pause");
       if (snapshot.debug && e.code === "F3") {
         e.preventDefault();
@@ -331,7 +340,7 @@ export async function createEngine(canvas: HTMLCanvasElement) {
           .find((h) => h.object.userData.kind === "seat");
         if (item) {
           send({ type: "select-seat", seatId: item.object.userData.id });
-          publish({ preview: "마우스를 움직여 위치를 미리 보세요" });
+          publish({ preview: "선택한 구역에 좌석을 설치할 수 있습니다" });
         }
       }
     },
@@ -344,7 +353,6 @@ export async function createEngine(canvas: HTMLCanvasElement) {
     "mousemove",
     (e) => {
       if (snapshot.mode === "layout") {
-        layoutHover(e);
         return;
       }
       if (
@@ -436,7 +444,8 @@ export async function createEngine(canvas: HTMLCanvasElement) {
     camera.updateMatrixWorld();
     if (snapshot.mode === "play") {
       ray.setFromCamera(new THREE.Vector2(0, 0), camera);
-      const intersection = ray.intersectObjects(cafe.targets)[0];
+      const intersection = ray.intersectObjects(cafe.targets.filter(t =>
+        t.userData.kind === "counter" ? game.counter : t.userData.id in game.seats))[0];
       target =
         intersection && intersection.distance <= 2.35
           ? (intersection.object as THREE.Mesh)
@@ -455,6 +464,8 @@ export async function createEngine(canvas: HTMLCanvasElement) {
       const selected = SEATS.find((s) => s.id === game.selectedSeat);
       ring.visible = !!selected;
       if (selected) ring.position.set(selected.x, 1.4, selected.z);
+      ghost.visible = !!selected && !(selected.id in game.seats);
+      if (selected) ghost.position.set(selected.x, 0.4, selected.z);
     }
     customerView.update(game, dt);
     if (game.customers.length || hadCustomers)
@@ -497,6 +508,18 @@ export async function createEngine(canvas: HTMLCanvasElement) {
     interact,
     pause: () => setMode("pause"),
     layout: () => setMode("layout"),
+    shop: () => setMode("shop"),
+    buy: (item: ShopItem) => send({ type: "buy", item }),
+    install: (item: ShopItem) => {
+      const id = game.selectedSeat;
+      if (item === "seat" && !id) return;
+      const pos = physics.position();
+      const overlaps = furnitureObstacles(item === "seat" ? [id!] : [], item === "counter").some(o =>
+        Math.abs(pos.x - o.x) < o.width / 2 + 0.32 && Math.abs(pos.z - o.z) < o.depth / 2 + 0.32);
+      if (overlaps) { publish({ message: "설치할 위치에서 사장님이 먼저 비켜 주세요" }); return; }
+      publish({ message: "" });
+      send(item === "counter" ? { type: "install-counter" } : { type: "install-seat", seatId: id! });
+    },
     settings: () => {
       settingsReturn = snapshot.mode === "welcome" ? "welcome" : "pause";
       setMode("settings");
@@ -554,6 +577,9 @@ export async function createEngine(canvas: HTMLCanvasElement) {
       materials.forEach((m) => m.dispose());
       cafe.materials.forEach((m) => m.dispose());
       cafe.textures.forEach((t) => t.dispose());
+      cafe.disposePlots();
+      surfaces.dispose();
+      environment.dispose();
       keyLight.shadow.dispose();
       renderer.dispose();
       physics.dispose();

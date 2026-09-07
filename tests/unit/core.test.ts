@@ -61,6 +61,7 @@ describe("시간과 상태 경계", () => {
 it("Rapier가 전면 벽과 카운터 관통을 막고 초기 위치로 복원한다", async () => {
   const physics = await createPhysics();
   try {
+    physics.syncFurniture([], true);
     for (let i = 0; i < 300; i++) physics.move(0, -0.05);
     expect(physics.position().z).toBeGreaterThan(-6.7);
     expect(physics.position().z).toBeLessThan(-6.4);

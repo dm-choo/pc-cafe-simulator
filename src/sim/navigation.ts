@@ -1,12 +1,12 @@
-import { OBSTACLES, type Point } from "../content/cafe";
+import { OBSTACLES, type Point, type Obstacle } from "../content/cafe";
 const CELL = 0.25;
 const key = (x: number, z: number) => `${x},${z}`;
 /** Small static shop: four-neighbour routing with a 0.18m clearance. */
-export function planRoute(from: Point, to: Point): Point[] | null {
+export function planRoute(from: Point, to: Point, obstacles: readonly Obstacle[] = OBSTACLES): Point[] | null {
   const free = (x: number, z: number) =>
     Math.abs(x) <= 4.5 &&
     Math.abs(z) <= 6.5 &&
-    !OBSTACLES.some(
+    !obstacles.some(
       (o) =>
         Math.abs(x - o.x) < o.width / 2 + 0.18 &&
         Math.abs(z - o.z) < o.depth / 2 + 0.18,

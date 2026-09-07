@@ -1,0 +1,36 @@
+import { test, expect } from "@playwright/test";
+import type { GameState } from "../../src/sim/game";
+test("ZERO-START: 빈 공간 → 구매 재고 → 선택 설치 → 중복 설치 방지", async ({ page }, info) => {
+  const read = () => page.evaluate(() => (window as unknown as {__cafe:{read:()=>{game:GameState;position:{x:number;z:number}}}}).__cafe.read());
+  await page.goto("./?debug=1");
+  await page.getByRole("button", { name: "설정", exact: true }).click();
+  await page.getByLabel("그래픽 품질").selectOption("low");
+  await page.getByRole("button", { name: "완료", exact: true }).click();
+  await page.getByRole("button", { name: "마우스 잠금 없이 시작", exact: true }).click();
+  expect((await read()).game.seats).toEqual({});
+  expect((await read()).game.counter).toBe(false);
+  await page.screenshot({path:info.outputPath("zero-empty-room.png")});
+  // Cross the former counter area: no invisible preinstalled collider.
+  await page.keyboard.down("KeyD");
+  await expect.poll(async () => (await read()).position.x).toBeGreaterThan(2);
+  await page.keyboard.up("KeyD");
+  await page.keyboard.press("KeyN");
+  await page.getByRole("button", {name:"카운터 세트 구매",exact:true}).click();
+  await expect(page.getByRole("button", {name:"카운터 세트 구매",exact:true})).toBeDisabled();
+  await page.getByRole("button", {name:"기본 좌석 세트 구매",exact:true}).click();
+  expect((await read()).game.seats).toEqual({});
+  expect((await read()).game.inventory.seat).toBe(1);
+  await page.screenshot({path:info.outputPath("shop-inventory.png")});
+  await page.getByRole("button", {name:"구매한 설비 설치하기 →",exact:true}).click();
+  await page.getByRole("button", {name:"카운터 설치",exact:true}).click();
+  await expect(page.getByText("설치할 위치에서 사장님이 먼저 비켜 주세요")).toBeVisible();
+  expect((await read()).game.counter).toBe(false);
+  await page.getByLabel("설치할 좌석 구역").selectOption("06");
+  await page.getByRole("button", {name:"선택한 구역에 좌석 설치",exact:true}).click();
+  await expect(page.getByRole("button", {name:"선택한 구역에 좌석 설치",exact:true})).toBeDisabled();
+  expect((await read()).game.seats).toEqual({"06":null});
+  expect((await read()).game.inventory.seat).toBe(0);
+  await page.screenshot({path:info.outputPath("first-seat-placement.png")});
+  await page.reload();
+  await expect(page.getByLabel("좌석 현황")).toHaveText("0/0석");
+});
