@@ -66,9 +66,20 @@
 
 ## 6. 원본·배포물·출처
 
-`assets/manifest.json`에는 G001의 코드 생성 임시 공간·favicon·Noto 글꼴 출처가 등록되어 있습니다. 최종 GLB 자산은 아직 없습니다. 첫 자산부터 ID, 런타임 경로, 원본 위치/버전, 제작자·출처 URL, 라이선스/사용 조건, 크기, LOD, collider, export 절차를 기록합니다. 예제 자산을 실제 제작된 것처럼 등록하지 않습니다.
+`assets/manifest.json`에 공간·글꼴·임시 인물·자체 제작 GLB 좌석·외부 재질을 기록합니다. ID, 런타임 경로, 원본 위치/버전, 출처 URL, 사용 조건, 크기, LOD, collider, export 절차를 유지합니다. 예제 자산을 실제 제작된 것처럼 등록하지 않습니다.
 
-작은 배포 GLB·텍스처와 manifest는 Git에 넣습니다. 큰 `.blend`·원본 텍스처가 생기면 Git LFS 또는 별도 원본 저장 위치를 선택하고 접근·버전·재현 방법을 기록합니다. 현재 LFS는 설정하지 않았습니다. LFS 포인터만 배포물로 올라가지 않게 빌드 때 실파일 존재를 검사해야 합니다.
+### 현재 적용한 자산과 재현
+
+- `scripts/assets/build-seat.mjs`: 코드 제작 좌석 GLB 172,156 bytes, 4,080 triangles, 5재질. Blender를 사용하지 않았습니다. 설치한 좌석만 공유 인스턴싱합니다.
+- `assets/materials.json`: Poly Haven [wood_table_worn](https://polyhaven.com/a/wood_table_worn), [plastered_wall_03](https://polyhaven.com/a/plastered_wall_03), [concrete_floor_worn_001](https://polyhaven.com/a/concrete_floor_worn_001). [CC0](https://polyhaven.com/license), 배포 credits 포함.
+- 각 재질 1K JPEG color/normal-GL/roughness 3장, 총 9장 3,963,365 bytes. base color만 sRGB, 나머지는 선형. 공유 MeshStandardMaterial과 반복 텍스처를 사용합니다.
+- `npm run assets:build`가 원본 GLB를 생성하고 `scripts/assets/fetch-materials.mjs`로 고정 URL의 재질을 다운로드합니다. 제공자 MD5와 일치해야 빌드가 진행되며 정상 캐시는 재사용합니다. MD5는 원본 일치 검사이지 보안 서명이 아닙니다.
+- 생성물은 `public/assets/generated/`에 두고 Git에서 제외합니다. 첫 빌드는 제공자 네트워크 연결이 필요합니다. Vite가 파일을 같은 Pages 사이트에 복사하므로 플레이 중에는 외부 재질 사이트로 요청하지 않습니다.
+- RoomEnvironment의 PMREM 공유 환경 반사와 1개 그림자 맵을 사용합니다. 현재 건물에 베이크된 간접광은 없으며 최종 인물·KTX2·LOD·실 GPU 프로파일은 미완료입니다.
+
+3.96MB는 JPEG 파일 합계이며 네트워크 압축 후 전송량·GPU 메모리·전체 게임 크기와 다릅니다. 기존 GLB 인스턴싱을 유지하고 작은 좌석 번호 캔버스를 줄였습니다. 메뉴로 정지한 장면은 설치·시점/모드·품질·창 크기가 바뀔 때만 렌더링합니다. 낮음 품질은 그림자를 끄고 pixel ratio를 0.75로 제한하며 DOM 글자는 원래 해상도를 유지합니다. 이 조치만으로 60석 60fps 최적화를 완료했다고 판단하지 않습니다.
+
+직접 편집한 작은 원본과 manifest는 Git에 넣고, 위와 같이 재현 가능한 생성물은 빌드합니다. 큰 `.blend`·원본 텍스처가 생기면 Git LFS 또는 별도 원본 저장 위치를 선택하고 접근·버전·재현 방법을 기록합니다. 현재 LFS는 설정하지 않았습니다. LFS 포인터만 배포물로 올라가지 않게 빌드 때 실파일 존재를 검사해야 합니다.
 
 첫 완성판은 에셋 마켓 구매를 필수로 하지 않습니다. 구매가 필요한 경우 원하는 자산, 가격, 사용 조건과 기대 효과를 먼저 제시합니다. 외부 상품 화면·로고·음악의 사용 가능 여부를 자동 추정하지 않습니다. 향후 UE5 전환을 고려해 원본과 범용 자산을 보존하지만 웹 코드가 자동으로 UE5로 이전된다고 약속하지 않습니다.
 

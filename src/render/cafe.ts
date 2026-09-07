@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { COUNTER, ROOM, SEATS, localPoint } from "../content/cafe";
+import type { CafeMaterials } from "./materials";
 
 function canvasTexture(
   width: number,
@@ -15,7 +16,22 @@ function canvasTexture(
   texture.anisotropy = 4;
   return texture;
 }
-export function buildCafe(scene: THREE.Scene) {
+export function buildCafe(scene: THREE.Scene, surfaces: CafeMaterials) {
+  const counterGroup = new THREE.Group();
+  const plots = new THREE.Group();
+  plots.visible = false;
+  scene.add(plots);
+  const plotGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(1.35, 0.012, 1.42));
+  const plotMat = new THREE.LineBasicMaterial({ color: "#7eaaa0", transparent: true, opacity: 0.65 });
+  for (const seat of SEATS) {
+    const marker = new THREE.LineSegments(plotGeo, plotMat);
+    marker.position.set(seat.x, 0.025, seat.z);
+    plots.add(marker);
+  }
+  const seatDetails = new Map<string, THREE.Group>();
+  counterGroup.visible = false;
+  scene.add(counterGroup);
+  let parent: THREE.Object3D = scene;
   const textures: THREE.Texture[] = [];
   const materials: THREE.Material[] = [];
   const texture = (
@@ -33,10 +49,10 @@ export function buildCafe(scene: THREE.Scene) {
     return m;
   };
   const graphite = mat("#232b30"),
-    desk = mat("#39302b", 0.62),
+    desk = surfaces.wood,
     edge = mat("#0e151b", 0.4, 0.45);
   const trim = mat("#adbbb9", 0.35, 0.7),
-    wall = mat("#87827b");
+    wall = surfaces.plaster;
   const warm = mat("#ddc0a1"),
     dark = mat("#141e25"),
     cream = mat("#d5d4c9");
@@ -46,23 +62,7 @@ export function buildCafe(scene: THREE.Scene) {
   const light = mat("#fff5d5");
   light.emissive.set("#fff0ce");
   light.emissiveIntensity = 1.4;
-  const floorMap = texture(512, 512, (c) => {
-    c.fillStyle = "#64665f";
-    c.fillRect(0, 0, 512, 512);
-    for (let i = 0; i < 15000; i++) {
-      const x = (i * 73.31) % 512,
-        y = (i * 137.47) % 512;
-      c.fillStyle = i % 2 ? "#60625c" : "#696b63";
-      c.fillRect(x, y, 2, 1);
-    }
-    c.strokeStyle = "#494b46";
-    c.lineWidth = 3;
-    c.strokeRect(0, 0, 512, 512);
-  });
-  floorMap.wrapS = floorMap.wrapT = THREE.RepeatWrapping;
-  floorMap.repeat.set(10, 14);
-  const floorMat = mat("#ffffff", 0.86);
-  floorMat.map = floorMap;
+  const floorMat = surfaces.concrete;
   const boxGeo = new THREE.BoxGeometry(1, 1, 1),
     cylGeo = new THREE.CylinderGeometry(1, 1, 1, 12);
   const batches = new Map<
@@ -71,6 +71,7 @@ export function buildCafe(scene: THREE.Scene) {
       geometry: THREE.BufferGeometry;
       material: THREE.Material;
       matrices: THREE.Matrix4[];
+      parent: THREE.Object3D;
     }
   >();
   const dummy = new THREE.Object3D();
@@ -86,10 +87,10 @@ export function buildCafe(scene: THREE.Scene) {
     cylinder = false,
   ) {
     const geometry = cylinder ? cylGeo : boxGeo,
-      key = material.uuid + geometry.uuid;
+      key = parent.uuid + material.uuid + geometry.uuid;
     let batch = batches.get(key);
     if (!batch) {
-      batch = { geometry, material, matrices: [] };
+      batch = { geometry, material, matrices: [], parent };
       batches.set(key, batch);
     }
     dummy.position.set(x, y, z);
@@ -108,7 +109,9 @@ export function buildCafe(scene: THREE.Scene) {
     z: number,
     rotation = 0,
   ) {
-    const t = texture(1024, 256, (c) => {
+    const resolution = w < 0.2 ? 256 : 1024;
+    const t = texture(resolution, resolution / 4, (c) => {
+      c.scale(resolution / 1024, resolution / 1024);
       c.fillStyle = "#15232a";
       c.fillRect(0, 0, 1024, 256);
       c.fillStyle = "#dbe7df";
@@ -124,7 +127,7 @@ export function buildCafe(scene: THREE.Scene) {
     const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m);
     p.position.set(x, y, z);
     p.rotation.y = rotation;
-    scene.add(p);
+    parent.add(p);
     return p;
   }
   part(floorMat, 0, -0.1, 0, ROOM.width, 0.2, ROOM.depth);
@@ -186,6 +189,11 @@ export function buildCafe(scene: THREE.Scene) {
   const proxyMat = new THREE.MeshBasicMaterial({ visible: false });
   materials.push(proxyMat);
   for (const seat of SEATS) {
+    const details = new THREE.Group();
+    details.visible = false;
+    seatDetails.set(seat.id, details);
+    scene.add(details);
+    parent = details;
     const screen = new THREE.Mesh(
       new THREE.PlaneGeometry(0.65, 0.366),
       screenMat,
@@ -193,7 +201,7 @@ export function buildCafe(scene: THREE.Scene) {
     const pos = localPoint(seat, 0, -0.135);
     screen.position.set(pos.x, 1.12, pos.z);
     screen.rotation.y = seat.rotation;
-    screens.add(screen);
+    details.add(screen);
     const labelPos = localPoint(seat, -0.48, 0.385);
     sign(
       seat.id,
@@ -213,6 +221,7 @@ export function buildCafe(scene: THREE.Scene) {
     proxy.userData = { kind: "seat", id: seat.id };
     targets.push(proxy);
   }
+  parent = counterGroup;
   part(desk, COUNTER.x, 0.52, COUNTER.z, COUNTER.width, 1.04, COUNTER.depth);
   part(
     edge,
@@ -255,8 +264,14 @@ export function buildCafe(scene: THREE.Scene) {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     mesh.computeBoundingSphere();
-    scene.add(mesh);
+    batch.parent.add(mesh);
   }
   targets.forEach((t) => t.updateMatrixWorld(true));
-  return { ceiling, targets, textures, materials };
+  return { ceiling, targets, textures, materials, plots,
+    disposePlots() { plotGeo.dispose(); plotMat.dispose(); },
+    sync(ids: readonly string[], counter: boolean) {
+      counterGroup.visible = counter;
+      for (const [id, group] of seatDetails) group.visible = ids.includes(id);
+    },
+  };
 }

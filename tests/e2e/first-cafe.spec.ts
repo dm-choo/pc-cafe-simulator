@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { installFirstShop } from "./setup-shop";
 const read = (page: Page) =>
   page.evaluate(() =>
     (
@@ -66,6 +67,7 @@ test("BASIC-12: 이동, 벽 충돌, 카운터, 배치, 설정, 새로고침", as
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "개발 장면 초기화" }).click();
   await page.getByRole("button", { name: "마우스 잠금 없이 계속" }).click();
+  await installFirstShop(page);
   await page.keyboard.down("KeyD");
   await expect
     .poll(async () => (await read(page)).position.x)
@@ -88,9 +90,8 @@ test("BASIC-12: 이동, 벽 충돌, 카운터, 배치, 설정, 새로고침", as
   await page.keyboard.press("KeyB");
   await expect(page.getByRole("region", { name: "배치 모드" })).toBeVisible();
   const tick = (await read(page)).tick;
-  await page.getByLabel("살펴볼 좌석").selectOption("01");
-  await page.mouse.move(720, 450);
-  await expect(page.getByRole("status")).toContainText("통로");
+  await page.getByLabel("설치할 좌석 구역").selectOption("01");
+  await expect(page.getByRole("button", { name: "선택한 구역에 좌석 설치" })).toBeDisabled();
   await page.screenshot({ path: testInfo.outputPath("04-layout.png") });
   expect((await read(page)).tick).toBe(tick);
   await page.getByRole("button", { name: "둘러보기로 돌아가기" }).click();
@@ -103,6 +104,7 @@ test("BASIC-12: 이동, 벽 충돌, 카운터, 배치, 설정, 새로고침", as
   await expect(
     page.getByRole("button", { name: "매장 들어가기" }),
   ).toBeVisible();
+  await expect(page.getByLabel("좌석 현황")).toHaveText("0/0석");
   expect(errors).toEqual([]);
   expect(failures).toEqual([]);
   await testInfo.attach("runtime", {

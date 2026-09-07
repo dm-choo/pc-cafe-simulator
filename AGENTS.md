@@ -12,7 +12,7 @@
 - Preserve real product/game names and the 2026-01-01 Korean price reference; label unverified values.
 - Do not require exhaustive SKU archives, BIOS accuracy, photogrammetry, or real game execution before gameplay.
 - Target realistic materials, scale, lighting and motion with measured browser performance.
-- Grow the same game: 12–24 seats / seven days first; 60 seats later.
+- Start from zero seats and no owned equipment; buy and install the first counter/seat. Grow the same game: 0→12→24 seats / seven days first; 60 seats later.
 
 ## Current commands
 

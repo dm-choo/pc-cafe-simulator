@@ -569,6 +569,16 @@ select {
   font-size: 12px;
   margin-bottom: 0;
 }
+button:disabled { opacity: .36; cursor: not-allowed; }
+.shop-item { padding: 14px 0; border-bottom: 1px solid #c5dac421; }
+.shop-item h2 { margin: 0 0 5px; font-size: 16px; }
+.shop-item p { margin: 0; font-size: 12px; color: #a6b2ad; }
+.shop-item .summary-row { margin: 6px 0; padding: 6px 0; }
+.shop-item .wide { margin-top: 6px; }
+.setup-status { color: #bfd5c7; font-size: 12px; margin: 14px 0; }
+.seat-grid .uninstalled { opacity: .3; }
+.seat-grid .uninstalled i { visibility: hidden; }
+.layout-panel { max-height: calc(100dvh - 160px); overflow-y: auto; }
 @media (max-width: 760px) {
   .business-hint {
     left: 20px;

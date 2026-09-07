@@ -1,6 +1,7 @@
 import { useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
 import type { Engine } from "../runtime/engine";
 import { SEATS } from "../content/cafe";
+import { CATALOG, STARTING_CASH, type ShopItem } from "../content/shop";
 function Panel({
   title,
   children,
@@ -18,7 +19,7 @@ function Panel({
       if (event.key !== "Tab" || !panel) return;
       const items = Array.from(
         panel.querySelectorAll<HTMLElement>(
-          'button, input, select, [tabindex="0"]',
+          'button:not(:disabled), input:not(:disabled), select:not(:disabled), [tabindex="0"]',
         ),
       );
       const first = items[0],
@@ -61,6 +62,8 @@ export function App({ engine }: { engine: Engine }) {
   const s = useSyncExternalStore(engine.subscribe, engine.getSnapshot);
   const resume = () => engine.start(false);
   const state = s.game;
+  const installed = Object.keys(state.seats).length;
+  const constructionBlocked = state.open || state.customers.length > 0;
   const occupied = Object.values(state.seats).filter(
     (id) => id !== null,
   ).length;
@@ -70,6 +73,7 @@ export function App({ engine }: { engine: Engine }) {
       ? "마감 중"
       : "개점 준비";
   const seatState = (id: string) => {
+    if (!(id in state.seats)) return "미설치";
     const c = state.customers.find((c) => c.id === state.seats[id]);
     return c ? (c.phase === "using" ? "이용 중" : "이동 중") : "빈자리";
   };
@@ -83,7 +87,7 @@ export function App({ engine }: { engine: Engine }) {
           <span className="tag">첫 매장</span>
         </div>
         <div className="store-state">
-          <i /> {trading} <span className="divider" /> {occupied}/12석{" "}
+          <i /> {trading} <span className="divider" /> <span aria-label="좌석 현황">{occupied}/{installed}석</span>{" "}
           <span className="divider" />
           <strong aria-label="보유 현금">
             {state.cash.toLocaleString()}원
@@ -126,6 +130,7 @@ export function App({ engine }: { engine: Engine }) {
             <span>
               {s.locked ? "마우스 · 둘러보기" : "드래그 / 방향키 · 둘러보기"}
             </span>
+            <button onClick={engine.shop}><kbd>N</kbd> 구매</button>
             <button onClick={engine.layout}>
               <kbd>B</kbd> 배치
             </button>
@@ -143,15 +148,15 @@ export function App({ engine }: { engine: Engine }) {
       {s.mode === "welcome" ? (
         <Panel title="내 PC방의 첫날">
           <p className="intro">
-            불을 켜고, 자리를 살펴보고.
+            아직 책상 하나 없는, 나의 첫 매장.
             <br />
             이제 이 공간을 내 매장으로 만들어 보세요.
           </p>
           <div className="chapter">
             <span>01</span>
             <div>
-              <strong>첫 손님 맞이하기</strong>
-              <p>카운터에서 영업을 시작하세요.</p>
+              <strong>0석에서 시작하기</strong>
+              <p>창업자금 {STARTING_CASH.toLocaleString()}원 · 구매 → 설치 → 첫 영업</p>
             </div>
           </div>
           <button className="primary" onClick={() => engine.start()}>
@@ -181,18 +186,18 @@ export function App({ engine }: { engine: Engine }) {
             마우스 잠금 없이 계속
           </button>
           <div className="menu-grid">
+            <button onClick={engine.shop}>설비 구매</button>
             <button onClick={engine.layout}>배치 살펴보기</button>
             <button onClick={engine.settings}>설정</button>
           </div>
           <details>
             <summary>조작 방법</summary>
             <p>
-              WASD 이동 · 마우스/방향키 시선 · E 살펴보기 · B 배치 · ESC/P
+              WASD 이동 · 마우스/방향키 시선 · E 살펴보기 · N 구매 · B 배치 · ESC/P
               일시정지
             </p>
             <p>
-              배치 모드에서는 좌석을 선택하고 마우스로 위치를 미리 볼 수
-              있습니다. 실제 이동은 아직 적용되지 않습니다.
+              구매한 설비는 배치 모드에서 설치합니다. 좌석은 지정된 12개 구역 중 선택하며, 영업 중에는 설치할 수 없습니다.
             </p>
           </details>
           {s.debug ? (
@@ -200,6 +205,23 @@ export function App({ engine }: { engine: Engine }) {
               개발 장면 초기화
             </button>
           ) : null}
+        </Panel>
+      ) : null}
+      {s.mode === "shop" ? (
+        <Panel title="설비 구매" close={resume}>
+          <p className="intro">첫 카운터, 첫 자리부터 채워 보세요.</p>
+          {(Object.keys(CATALOG) as ShopItem[]).map(item => {
+            const product = CATALOG[item];
+            const full = item === "counter" ? state.counter || state.inventory.counter > 0 : installed + state.inventory.seat >= SEATS.length;
+            return <article className="shop-item" key={item}>
+              <h2>{product.name}</h2><p>{product.description}</p>
+              <div className="summary-row"><strong>{product.price.toLocaleString()}원</strong><span>미설치 보유 {state.inventory[item]}개</span></div>
+              <button className="wide" disabled={full || state.cash < product.price} onClick={() => engine.buy(item)}>{product.name} 구매</button>
+            </article>;
+          })}
+          <p className="receipt" role="status">{state.notice}</p>
+          <p className="footnote">창업자금과 구매 가격은 개발용 시험 값입니다. 2026-01-01 실제 시장 가격을 반영한 카탈로그는 아직 아닙니다.</p>
+          <button className="primary" onClick={engine.layout}>구매한 설비 설치하기 →</button>
         </Panel>
       ) : null}
       {s.mode === "counter" ? (
@@ -211,13 +233,13 @@ export function App({ engine }: { engine: Engine }) {
           </div>
           <div className="summary-row">
             <span>설치된 좌석</span>
-            <strong>12석</strong>
+            <strong>{installed}석</strong>
           </div>
           <div className="seat-grid">
             {SEATS.map((seat) => (
               <span
                 key={seat.id}
-                className={state.seats[seat.id] === null ? "" : "occupied"}
+                className={!(seat.id in state.seats) ? "uninstalled" : state.seats[seat.id] === null ? "" : "occupied"}
                 title={`${seat.id}번 ${seatState(seat.id)}`}
               >
                 {seat.id}
@@ -228,7 +250,7 @@ export function App({ engine }: { engine: Engine }) {
           <div className="summary-row">
             <span>누적 매출 · 결제 완료</span>
             <strong>
-              {state.cash.toLocaleString()}원 · {state.served}명
+              {state.revenue.toLocaleString()}원 · {state.served}명
             </strong>
           </div>
           {state.receipts.length ? (
@@ -243,6 +265,7 @@ export function App({ engine }: { engine: Engine }) {
           </p>
           <button
             className="primary"
+            disabled={!state.open && installed === 0}
             onClick={state.open ? engine.closeCafe : engine.openCafe}
           >
             {state.open ? "신규 입장 중지" : "영업 시작"}
@@ -283,8 +306,10 @@ export function App({ engine }: { engine: Engine }) {
             <span className="eyebrow">FLOOR PLAN</span>
             <h1>매장 배치</h1>
             <p>시간이 멈췄습니다.</p>
+            <div className="setup-status">카운터 {state.counter ? "설치됨" : "미설치"} · 좌석 {installed}/12개</div>
+            <button className="wide" disabled={state.counter || state.inventory.counter < 1 || constructionBlocked} onClick={() => engine.install("counter")}>카운터 설치</button>
             <label>
-              살펴볼 좌석
+              설치할 좌석 구역
               <select
                 value={s.selectedSeat ?? ""}
                 onChange={(e) => engine.selectSeat(e.target.value)}
@@ -294,21 +319,23 @@ export function App({ engine }: { engine: Engine }) {
                 </option>
                 {SEATS.map((seat) => (
                   <option key={seat.id} value={seat.id}>
-                    {seat.id}번 좌석
+                    {seat.id}번 · {seatState(seat.id)}
                   </option>
                 ))}
               </select>
             </label>
+            <button className="primary" disabled={!s.selectedSeat || s.selectedSeat in state.seats || state.inventory.seat < 1 || constructionBlocked} onClick={() => engine.install("seat")}>선택한 구역에 좌석 설치</button>
+            <p className="receipt" role="status">{s.message || state.notice}</p>
             <p className="footnote">
-              좌석을 클릭한 뒤 마우스를 움직여 위치를 미리 보세요. 현재 배치는
-              바뀌지 않습니다.
+              미설치 보유: 카운터 {state.inventory.counter} · 좌석 {state.inventory.seat}. 지정 구역의 설비를 직접 설치합니다. {constructionBlocked ? "영업 종료 후 모든 손님이 퇴장해야 설치할 수 있습니다." : "아직 자유 이동·회전은 지원하지 않습니다."}
             </p>
+            <button className="wide" onClick={engine.shop}>설비 구매로</button>
             <button className="primary" onClick={resume}>
               둘러보기로 돌아가기
             </button>
           </section>
           <div className="layout-caption" role="status">
-            {s.preview || "좌석 선택 · 위치 미리보기"}
+            {s.preview || "좌석 구역 선택 → 설치 확정"}
           </div>
         </>
       ) : null}
