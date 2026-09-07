@@ -1,6 +1,6 @@
 # 현재 상태와 다음 작업
 
-기준일: 2026-09-07. **G001 PR #11 main 통합 완료. G002 PR #12 main 통합 완료. G003 첫 아트 패스와 첫 Pages 배포 준비 중입니다.**
+기준일: 2026-09-07. **G001 PR #11 main 통합 완료. G002 PR #12 main 통합 완료. G003 첫 아트 패스 PR #13 main 통합 완료. 첫 Pages 배포는 초기 사이트 설정 누락으로 실패했습니다.**
 
 ## 구현한 것
 
@@ -35,10 +35,20 @@
 
 - [작업 계약](../tasks/003-first-art-and-deploy.md): 자체 제작 GLB 좌석, 공유 인스턴싱, 무릎·팔꿈치 관절과 앉기 전환.
 - 코드 `ec9f6e8`에서 lint·타입 검사·빌드·규칙 12개·브라우저 4개 통과. 입구·통로·고객 착석 눈높이 화면을 직접 확인했습니다. [검증 기록](../quality/evidence/g003-first-art.md).
-- main에서 검증한 동일 빌드를 Pages에 배포하고 release.json SHA 확인 후 공개 URL에서 브라우저 검사를 실행하도록 구성했습니다. 실제 배포 성공은 아직 확인되지 않았습니다.
-- 최초 Pages 활성화 상태를 확인해야 합니다. 현재 GitHub 연결 도구에 Pages 설정 변경 기능은 없습니다.
+- main에서 검증한 동일 빌드를 Pages에 배포하고 release.json SHA 확인 후 공개 URL에서 브라우저 검사를 실행하도록 구성했습니다. 실제 첫 실행은 아래처럼 실패했으며 공개 플레이는 아직 불가합니다.
+- 최초 Pages 활성화와 Source: GitHub Actions 설정이 필요합니다. 현재 GitHub 연결 도구에 Pages 설정 변경 기능은 없습니다.
 - 최종 재질·조명·자연스러운 동작·실제 GPU 성능 등 G003 잔여 작업은 유지합니다.
+
+## 첫 배포 실제 결과
+
+- main 코드 `7cc3db3387ac85285df8651bbf634994550f68c2`.
+- [배포 실행 #34090461881](https://github.com/dm-choo/pc-cafe-simulator/actions/runs/34090461881): basic-12 job 성공(규칙 12개·브라우저 4개 포함), Pages artifact 생성 완료.
+- [deploy job #101643585884](https://github.com/dm-choo/pc-cafe-simulator/actions/runs/34090461881/job/101643585884): configure-pages가 `Get Pages site failed` / `HttpError: Not Found`로 실패했습니다. 로그는 Pages 활성화 및 GitHub Actions 빌드 소스를 확인하도록 안내합니다.
+- public-smoke는 선행 배포 실패로 실행되지 않았습니다. 공개 URL 성공·공개 브라우저 통과를 주장하지 않습니다.
+- 기본 GITHUB_TOKEN으로 최초 활성화를 할 수 없으며, 현재 연결 도구에도 Pages 설정 변경 기능이 없습니다. 토큰 추출·권한 변경을 시도하지 않았습니다.
 
 ## 다음 행동
 
-PR #13의 구현·화면 검증을 마쳤으며 main 통합 후 Pages 배포를 실행합니다. 저장은 아직 없습니다.
+저장소 [Settings → Pages](https://github.com/dm-choo/pc-cafe-simulator/settings/pages)에서 Build and deployment → Source를 **GitHub Actions**로 설정합니다. 그 뒤 위 실행의 **Re-run failed jobs**로 게시를 재시도합니다. 이후 실행이 이미 진행 중이라면 해당 실행의 deploy 결과부터 확인해 중복 배포를 피합니다. 상세 [배포·재시도 절차](../development/github.md).
+
+공개 URL의 release.json SHA와 공개 브라우저 검사가 통과하면 배포 완료로 갱신합니다. G003 최종 재질·조명·동작·실 GPU 검증과 저장 구현은 후속 작업입니다.
