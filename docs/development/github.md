@@ -10,7 +10,7 @@ GitHub Free에서도 public 저장소로 Pages를 사용할 수 있습니다. �
 
 ## 2. 개발 컴퓨터에서 시작
 
-저장소의 main을 복제한 뒤 문서와 현재 상태를 확인합니다. 처음 등록하는 동안에는 문서 등록 PR의 상태도 확인합니다.
+저장소의 main을 복제한 뒤 문서와 현재 상태를 확인합니다. 문서 등록은 PR #10에서 검증합니다. 이후에는 main의 최신 문서와 해당 커밋의 검사 결과를 사용합니다.
 
 ```bash
 git clone https://github.com/dm-choo/pc-cafe-simulator.git

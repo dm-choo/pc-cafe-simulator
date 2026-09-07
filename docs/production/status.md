@@ -1,6 +1,6 @@
 # 현재 상태와 다음 작업
 
-기준일: 2026-09-07. **문서·개발 구조 준비 단계이며 게임은 미구현입니다.**
+기준일: 2026-09-07. **문서·개발 구조 등록과 초기 이슈 구성을 완료했습니다. 게임은 미구현입니다.**
 
 ## 완료한 구성
 
@@ -17,8 +17,8 @@
 | 저장소 | [dm-choo/pc-cafe-simulator](https://github.com/dm-choo/pc-cafe-simulator), public |
 | 연결 앱 접근 | 반영 완료. README 쓰기와 이슈 생성 성공 |
 | 초기 작업 | [G001~G009, 이슈 #1~#9](https://github.com/dm-choo/pc-cafe-simulator/issues) 등록 |
-| 문서 등록 | `chore/repository-foundation` 브랜치에서 검증 후 main 통합 |
-| GitHub Actions | 문서 검사 workflow 등록 후 실제 실행 결과 확인 |
+| 문서 등록 | 25개 파일, [등록 PR #10](https://github.com/dm-choo/pc-cafe-simulator/pull/10) |
+| GitHub Actions | [문서 검사 통과](https://github.com/dm-choo/pc-cafe-simulator/actions/runs/34085215856), 검사 대상 `0df0f8a` |
 | Pages | 게임 코드·배포 없음 |
 | 다른 저장소 | 변경 없음 |
 
@@ -27,16 +27,17 @@
 - `python3 scripts/check_docs.py`: 로컬 문서 링크 경로와 자산 등록부 검사 통과.
 - 기존 제품 계획과 원본의 바이트 일치 확인.
 - 임시 복제에서 끊어진 링크와 잘못된 JSON을 넣었을 때 검사 실패 확인.
-- YAML 3개 파싱, 이슈 필드 ID와 워크플로 기본 구조 확인. GitHub 서비스의 실행 검증은 아님.
+- YAML 3개 파싱, 이슈 필드 ID와 워크플로 기본 구조 확인. 이후 GitHub Actions에서도 문서·공백 검사를 통과했습니다.
 - Git 공백 검사 통과. 원격 등록 전 로컬 준비 기록은 보관 패키지에 남겼습니다.
 - Git 번들을 별도 임시 디렉터리에 복원해 동일한 tree와 문서 검사 실행을 확인했습니다. 최신 커밋은 `git log -1`로 확인합니다.
+- 원격 Git tree와 로컬 준비 파일의 tree SHA가 일치함을 확인했습니다.
+- 위 CI 링크는 기록된 검사 대상 커밋의 증거입니다. 이후 변경의 최신 결과는 해당 커밋의 Actions에서 확인합니다.
 - 게임·시각·성능·사람 플레이 결과는 아직 없습니다.
 
 ## 다음 행동
 
-1. 최초 문서 등록 PR의 GitHub Actions와 변경 파일을 확인하고 main에 통합합니다.
-2. [G001 / 이슈 #1](https://github.com/dm-choo/pc-cafe-simulator/issues/1)을 구현합니다. 매장 이동·UI 입력·웹 빌드부터 시작하고 G002 첫 손님으로 이어갑니다.
-3. G010은 G009 완료 후 실제 플레이 결과에 따라 나눕니다. 자동 개발 에이전트는 아직 실행하지 않았습니다.
+1. [G001 / 이슈 #1](https://github.com/dm-choo/pc-cafe-simulator/issues/1)을 구현합니다. 매장 이동·UI 입력·웹 빌드부터 시작하고 G002 첫 손님으로 이어갑니다.
+2. G010은 G009 완료 후 실제 플레이 결과에 따라 나눕니다. 자동 개발 에이전트는 아직 실행하지 않았습니다.
 
 ## 미정 사항의 처리
 

@@ -2,7 +2,7 @@
 
 내 매장을 직접 돌보고, 손님을 이해하고, 투자와 직원 운영으로 성장시키는 1인칭 한국 PC방 경영 게임.
 
-**현재 단계: 개발 준비 문서와 저장소 기초 구성. 게임 실행 코드는 아직 없습니다.** 저장소는 [dm-choo/pc-cafe-simulator](https://github.com/dm-choo/pc-cafe-simulator)입니다. 등록·검증 상태와 다음 작업은 [현재 상태](docs/production/status.md)에 기록합니다.
+**현재 단계: 개발 준비 문서·저장소 구성·초기 이슈 등록 완료. 게임 실행 코드는 아직 없습니다.** 저장소는 [dm-choo/pc-cafe-simulator](https://github.com/dm-choo/pc-cafe-simulator)입니다. 등록·검증 상태와 다음 작업은 [현재 상태](docs/production/status.md)에 기록합니다.
 
 ## 개발 기준
 
