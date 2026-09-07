@@ -52,6 +52,9 @@ export async function createEngine(canvas: HTMLCanvasElement) {
   const keyLight = new THREE.DirectionalLight("#ffedd4", 3.1);
   keyLight.position.set(-2, 6, 4);
   keyLight.castShadow = true;
+  // G001 furniture is static. Re-render this map when geometry starts moving in G002.
+  keyLight.shadow.autoUpdate = false;
+  keyLight.shadow.needsUpdate = true;
   keyLight.shadow.mapSize.set(1024, 1024);
   keyLight.shadow.camera.left = -8;
   keyLight.shadow.camera.right = 8;
@@ -197,6 +200,8 @@ export async function createEngine(canvas: HTMLCanvasElement) {
       ((event.clientX - r.left) / r.width) * 2 - 1,
       (-(event.clientY - r.top) / r.height) * 2 + 1,
     );
+    // DOM controls can become available before the first overhead render.
+    overhead.updateMatrixWorld(true);
     ray.setFromCamera(mouse, overhead);
   }
   function layoutHover(event: MouseEvent) {
@@ -345,9 +350,16 @@ export async function createEngine(canvas: HTMLCanvasElement) {
     },
     { signal: events.signal },
   );
-  canvas.addEventListener("webglcontextrestored", () => setMode("pause"), {
-    signal: events.signal,
-  });
+  canvas.addEventListener(
+    "webglcontextrestored",
+    () => {
+      keyLight.shadow.needsUpdate = true;
+      setMode("pause");
+    },
+    {
+      signal: events.signal,
+    },
+  );
   function reset() {
     physics.reset();
     yaw = SPAWN.yaw;
@@ -363,13 +375,23 @@ export async function createEngine(canvas: HTMLCanvasElement) {
     previous = now;
     const lag = clock.advance(now, blocked(), () => {
       game = step(game);
-      yaw += (Number(keys.has("ArrowLeft")) - Number(keys.has("ArrowRight"))) * 0.05 * 1.4;
-      pitch = THREE.MathUtils.clamp(pitch + (Number(keys.has("ArrowUp")) - Number(keys.has("ArrowDown"))) * 0.05, -1.35, 1.35);
+      yaw +=
+        (Number(keys.has("ArrowLeft")) - Number(keys.has("ArrowRight"))) *
+        0.05 *
+        1.4;
+      pitch = THREE.MathUtils.clamp(
+        pitch +
+          (Number(keys.has("ArrowUp")) - Number(keys.has("ArrowDown"))) * 0.05,
+        -1.35,
+        1.35,
+      );
       const forward = Number(keys.has("KeyW")) - Number(keys.has("KeyS"));
       const side = Number(keys.has("KeyD")) - Number(keys.has("KeyA"));
-      const distance = 2.2 * 0.05 / (Math.hypot(forward, side) || 1);
-      physics.move((-Math.sin(yaw) * forward + Math.cos(yaw) * side) * distance,
-        (-Math.cos(yaw) * forward - Math.sin(yaw) * side) * distance);
+      const distance = (2.2 * 0.05) / (Math.hypot(forward, side) || 1);
+      physics.move(
+        (-Math.sin(yaw) * forward + Math.cos(yaw) * side) * distance,
+        (-Math.cos(yaw) * forward - Math.sin(yaw) * side) * distance,
+      );
     });
     if (document.hidden || snapshot.mode === "error") return;
     const pos = physics.position();
@@ -399,7 +421,7 @@ export async function createEngine(canvas: HTMLCanvasElement) {
     if (snapshot.mode === "layout") {
       const selected = SEATS.find((s) => s.id === game.selectedSeat);
       ring.visible = !!selected;
-      if (selected) ring.position.set(selected.x, 0.015, selected.z);
+      if (selected) ring.position.set(selected.x, 1.4, selected.z);
     }
     renderer.render(scene, snapshot.mode === "layout" ? overhead : camera);
     if (now - lastUI > 250) {
@@ -435,6 +457,7 @@ export async function createEngine(canvas: HTMLCanvasElement) {
     quality(value: "standard" | "low") {
       publish({ quality: value });
       renderer.shadowMap.enabled = value === "standard";
+      keyLight.shadow.needsUpdate = true;
       scene.traverse((o) => {
         if (o instanceof THREE.Mesh) {
           const mats = Array.isArray(o.material) ? o.material : [o.material];
