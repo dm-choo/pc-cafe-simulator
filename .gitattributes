@@ -1,0 +1,11 @@
+* text=auto
+*.md text eol=lf
+*.py text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+*.glb binary
+*.blend binary
+*.ktx2 binary
+*.png binary
+*.jpg binary
+*.ogg binary

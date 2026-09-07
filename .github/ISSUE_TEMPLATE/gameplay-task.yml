@@ -1,0 +1,32 @@
+name: 게임 기능 작업
+description: 플레이어가 확인할 변화와 완료 기준을 작성합니다.
+title: "[G번호] "
+body:
+  - type: textarea
+    id: purpose
+    attributes:
+      label: 목적과 플레이 경험
+      description: 어떤 상황에서 무엇을 할 수 있게 되는가?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 범위·문맥·선행 작업
+      description: 관련 문서·코드·담당 범위와 필요한 이전 작업을 적습니다.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 완료 조건과 유지할 규칙
+      description: 행동과 관찰 가능한 결과, 돈·좌석·주문·저장 조건을 적습니다.
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: 검증 방법
+      description: 실제 명령·브라우저 재현·사람 검증이 필요한 부분을 구별합니다.
+    validations:
+      required: true
