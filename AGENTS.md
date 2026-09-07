@@ -21,8 +21,8 @@
 - Node 24.19.0 (`.nvmrc`), `npm ci` installs the exact lockfile.
 - `npm run dev`: Vite; open `/pc-cafe-simulator/`.
 - `npm run build`: TypeScript check and production build; `npm run preview`: serve that build.
-- `npm run lint`: ESLint including sim dependency restrictions; `npm test`: clock/state/collision checks.
-- `npx playwright install --with-deps chromium`, then `npm run test:e2e`: BASIC-12 production browser checks.
+- `npm run lint`: ESLint including sim dependency restrictions; `npm test`: clock/state/collision/customer/settlement checks.
+- `npx playwright install --with-deps chromium`, then `npm run test:e2e`: BASIC-12 and FIRST-SALE production browser checks.
 - `?debug=1` exposes read-only `window.__cafe.read()` and scene reset. See current status for actual browser results.
 - Do not report planned commands, CI, remote upload, browser tests, FPS, or playtests as completed.
 
