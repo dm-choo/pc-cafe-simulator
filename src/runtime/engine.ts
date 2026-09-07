@@ -8,6 +8,7 @@ import {
   type GameState,
 } from "../sim/game";
 import { createCustomerView } from "../render/customers";
+import { loadSeatAsset } from "../render/seat-asset";
 import { buildCafe } from "../render/cafe";
 import { placementReason } from "../sim/layout";
 import { FixedClock } from "./clock";
@@ -57,6 +58,7 @@ export async function createEngine(canvas: HTMLCanvasElement) {
   const scene = new THREE.Scene();
   scene.fog = new THREE.Fog("#303d41", 12, 29);
   const cafe = buildCafe(scene);
+  await loadSeatAsset(scene);
   const customerView = createCustomerView(scene);
   scene.add(new THREE.HemisphereLight("#dbe9f1", "#787167", 2.1));
   const keyLight = new THREE.DirectionalLight("#ffedd4", 3.1);

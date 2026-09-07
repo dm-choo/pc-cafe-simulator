@@ -45,6 +45,17 @@ test("FIRST-SALE: 카운터 개점 → 손님 착석 → 첫 결제 → 마감",
       { timeout: 40000 },
     )
     .toBe(true);
+  await page.keyboard.press("Digit1");
+  await page.mouse.move(800, 400);
+  await page.mouse.down();
+  await page.mouse.move(425, 480, { steps: 10 });
+  await page.mouse.up();
+  await page.screenshot({ path: testInfo.outputPath("seated-eye-level.png") });
+  await page.mouse.move(425, 480);
+  await page.mouse.down();
+  await page.mouse.move(800, 400, { steps: 10 });
+  await page.mouse.up();
+  await page.keyboard.press("Digit4");
   await page.keyboard.press("KeyB");
   const paused = await read();
   await page.screenshot({

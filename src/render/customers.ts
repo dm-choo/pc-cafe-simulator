@@ -1,131 +1,79 @@
 import * as THREE from "three";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { SEATS } from "../content/cafe";
 import type { GameState } from "../sim/game";
+
+/** Shared geometry, articulated elbows/knees; all animation remains a view of sim state. */
 export function createCustomerView(scene: THREE.Scene) {
-  const people = new Map<
-    number,
-    {
-      root: THREE.Group;
-      legs: THREE.Mesh[];
-      arms: THREE.Mesh[];
-      head: THREE.Mesh;
-      body: THREE.Mesh;
-      last: THREE.Vector3;
-    }
-  >();
-  const skin = new THREE.MeshStandardMaterial({
-    color: "#bd967b",
-    roughness: 0.9,
-  });
-  const shirt = new THREE.MeshStandardMaterial({
-    color: "#587889",
-    roughness: 0.9,
-  });
-  const pants = new THREE.MeshStandardMaterial({
-    color: "#273038",
-    roughness: 0.85,
-  });
-  const hair = new THREE.MeshStandardMaterial({
-    color: "#27211f",
-    roughness: 1,
-  });
-  const sphere = new THREE.SphereGeometry(0.13, 12, 8),
-    torso = new THREE.BoxGeometry(0.37, 0.52, 0.21),
-    limb = new THREE.CylinderGeometry(0.065, 0.065, 0.55, 8);
-  function create(id: number) {
-    const root = new THREE.Group();
-    const body = new THREE.Mesh(torso, shirt);
-    body.position.y = 1.06;
-    root.add(body);
-    const head = new THREE.Mesh(sphere, skin);
-    head.position.y = 1.48;
-    root.add(head);
-    const cap = new THREE.Mesh(
-      new THREE.SphereGeometry(0.133, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2),
-      hair,
-    );
-    cap.position.y = 0.02;
-    head.add(cap);
-    const legs = [-1, 1].map((side) => {
-      const leg = new THREE.Mesh(limb, pants);
-      leg.position.set(side * 0.1, 0.5, 0);
-      root.add(leg);
-      return leg;
-    });
-    const arms = [-1, 1].map((side) => {
-      const arm = new THREE.Mesh(limb, shirt);
-      arm.scale.set(0.75, 0.9, 0.75);
-      arm.position.set(side * 0.235, 0.97, 0);
-      root.add(arm);
-      return arm;
-    });
-    root.traverse((o) => {
-      if (o instanceof THREE.Mesh) {
-        o.castShadow = true;
-        o.receiveShadow = true;
-      }
-    });
-    scene.add(root);
-    const value = { root, body, head, legs, arms, last: new THREE.Vector3() };
-    people.set(id, value);
-    return value;
+  const skin = new THREE.MeshStandardMaterial({ color: "#bd967b", roughness: .9 });
+  const shirts = ["#587889", "#80715c", "#62766b"].map(color => new THREE.MeshStandardMaterial({color,roughness:.95}));
+  const pants = new THREE.MeshStandardMaterial({ color: "#273038", roughness: .9 });
+  const hair = new THREE.MeshStandardMaterial({ color: "#201b19", roughness: 1 });
+  const sphere = new THREE.SphereGeometry(.125,12,8);
+  const cap = new THREE.SphereGeometry(.129,12,8,0,Math.PI*2,0,Math.PI/2);
+  const torso = new RoundedBoxGeometry(.36,.48,.22,1,.05);
+  const limb = new THREE.CylinderGeometry(1,1,1,8);
+  const shoe = new RoundedBoxGeometry(.115,.075,.24,1,.025);
+  const up = new THREE.Vector3(0,1,0), a = new THREE.Vector3(), b = new THREE.Vector3(), delta = new THREE.Vector3();
+  function bone(mesh:THREE.Mesh, start:number[], end:number[], radius:number) {
+    a.fromArray(start); b.fromArray(end); delta.subVectors(b,a);
+    mesh.position.copy(a).add(b).multiplyScalar(.5);
+    mesh.scale.set(radius,delta.length(),radius);
+    mesh.quaternion.setFromUnitVectors(up,delta.normalize());
   }
+  function create(id:number) {
+    const root=new THREE.Group(), shirt=shirts[id%shirts.length];
+    const mesh=(geo:THREE.BufferGeometry, mat:THREE.Material)=>{
+      const m=new THREE.Mesh(geo,mat);m.castShadow=true;m.receiveShadow=true;root.add(m);return m;
+    };
+    const body=mesh(torso,shirt),head=mesh(sphere,skin),hairMesh=mesh(cap,hair);
+    head.scale.set(.86,1.16,.95);
+    const legs=[0,1].map(()=>({thigh:mesh(limb,pants),shin:mesh(limb,pants),foot:mesh(shoe,hair)}));
+    const arms=[0,1].map(()=>({upper:mesh(limb,shirt),lower:mesh(limb,skin),hand:mesh(sphere,skin)}));
+    arms.forEach(v=>v.hand.scale.set(.3,.25,.4));
+    scene.add(root);
+    return {root,body,head,hairMesh,legs,arms,last:new THREE.Vector3(),sit:0,stride:0};
+  }
+  const people=new Map<number,ReturnType<typeof create>>();
   return {
-    update(state: GameState, dt: number) {
-      for (const [id, v] of people)
-        if (!state.customers.some((c) => c.id === id)) {
-          scene.remove(v.root);
-          v.head.children.forEach((o) => {
-            if (o instanceof THREE.Mesh) o.geometry.dispose();
-          });
-          people.delete(id);
-        }
-      for (const c of state.customers) {
-        const fresh = !people.has(c.id),
-          v = people.get(c.id) ?? create(c.id);
-        const dest = new THREE.Vector3(c.position.x, 0, c.position.z);
-        if (fresh) {
-          v.root.position.copy(dest);
-          v.last.copy(dest);
-        }
-        const seated = c.phase === "using";
-        const blend = 1 - Math.exp(-14 * dt);
-        v.root.position.lerp(dest, blend);
-        const direction = dest.clone().sub(v.last);
-        if (seated)
-          v.root.rotation.y =
-            SEATS.find((s) => s.id === c.seatId)!.rotation + Math.PI;
-        else if (direction.lengthSq() > 0.00001)
-          v.root.rotation.y = Math.atan2(direction.x, direction.z);
+    update(state:GameState,dt:number) {
+      const active=new Set(state.customers.map(c=>c.id));
+      for(const [id,v] of people) if(!active.has(id)){scene.remove(v.root);people.delete(id);}
+      for(const c of state.customers){
+        const fresh=!people.has(c.id),v=people.get(c.id)??create(c.id);people.set(c.id,v);
+        const dest=new THREE.Vector3(c.position.x,0,c.position.z);
+        if(fresh){v.root.position.copy(dest);v.last.copy(dest);}
+        const direction=dest.clone().sub(v.last), distance=direction.length();
+        v.stride+=distance*7;
+        const seated=c.phase==="using",blend=1-Math.exp(-14*dt);
+        v.sit=THREE.MathUtils.lerp(v.sit,seated?1:0,blend);
+        const t=v.sit, mix=(standing:number,sitting:number)=>THREE.MathUtils.lerp(standing,sitting,t);
+        v.root.position.lerp(dest,blend);
+        if(seated)v.root.rotation.y=SEATS.find(s=>s.id===c.seatId)!.rotation+Math.PI;
+        else if(distance>.0001)v.root.rotation.y=Math.atan2(direction.x,direction.z);
         v.last.copy(dest);
-        const swing = Math.sin(state.tick * 0.05 * 8 + c.id) * 0.42;
-        v.body.position.y = seated ? 0.86 : 1.06;
-        v.head.position.y = seated ? 1.25 : 1.48;
-        v.legs.forEach((leg, i) => {
-          leg.position.y = seated ? 0.28 : 0.5;
-          leg.position.z = seated ? 0.26 : 0;
-          leg.rotation.x = seated ? 0 : (i ? 1 : -1) * swing;
+        v.body.position.set(0,mix(1.06,.87),mix(0,.04));
+        v.body.rotation.x=mix(0,.08);
+        v.head.position.set(0,mix(1.44,1.245),mix(0,.08));
+        v.hairMesh.position.copy(v.head.position);v.hairMesh.position.y+=.03;
+        v.hairMesh.scale.copy(v.head.scale);
+        v.legs.forEach((leg,i)=>{
+          const side=i?1:-1,x=side*.105,swing=Math.sin(v.stride+i*Math.PI)*.22*(1-t);
+          const hip=[x,mix(.82,.57),0],knee=[x,mix(.44,.49),mix(swing,.34)],ankle=[x,.105,mix(-swing,.36)];
+          bone(leg.thigh,hip,knee,.074);bone(leg.shin,knee,ankle,.054);
+          leg.foot.position.set(x,.05,ankle[2]+.065);
         });
-        v.arms.forEach((arm, i) => {
-          arm.position.y = seated ? 0.84 : 0.97;
-          arm.position.z = seated ? 0.18 : 0;
-          arm.rotation.x = seated ? -0.9 : (i ? -1 : 1) * swing * 0.5;
-        });
-      }
-    },
-    clear() {
-      for (const v of people.values()) {
-        scene.remove(v.root);
-        v.head.children.forEach((o) => {
-          if (o instanceof THREE.Mesh) o.geometry.dispose();
+        v.arms.forEach((arm,i)=>{
+          const side=i?1:-1,swing=Math.sin(v.stride+i*Math.PI)*.12*(1-t);
+          const shoulder=[side*.215,mix(1.24,1.05),mix(0,.04)];
+          const elbow=[side*.23,mix(.97,.79),mix(swing,.17)];
+          const wrist=[side*.18,mix(.76,.8),mix(swing,.49)];
+          bone(arm.upper,shoulder,elbow,.052);bone(arm.lower,elbow,wrist,.039);
+          arm.hand.position.fromArray(wrist);arm.hand.position.z+=.025*t;
         });
       }
-      people.clear();
     },
-    dispose() {
-      this.clear();
-      [sphere, torso, limb].forEach((g) => g.dispose());
-      [skin, shirt, pants, hair].forEach((m) => m.dispose());
-    },
+    clear(){for(const v of people.values())scene.remove(v.root);people.clear();},
+    dispose(){this.clear();[sphere,cap,torso,limb,shoe].forEach(g=>g.dispose());[skin,...shirts,pants,hair].forEach(m=>m.dispose());},
   };
 }
