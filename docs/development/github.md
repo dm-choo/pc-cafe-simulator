@@ -4,7 +4,7 @@
 
 2026-09-07 사용자가 [dm-choo/pc-cafe-simulator](https://github.com/dm-choo/pc-cafe-simulator)를 생성했습니다. 저장소는 public이며 연결 앱의 접근 설정을 반영한 뒤 README 쓰기와 이슈 생성에 성공했습니다. 다른 저장소는 변경하지 않습니다.
 
-문서·이슈·CI의 실제 등록 결과는 [현재 상태](../production/status.md)에 기록합니다. 이전 403 오류는 새 저장소가 앱 접근 목록에 없어서 발생했고, 사용자 설정 변경 후 해결됐습니다. Pages는 게임 빌드가 준비된 뒤 설정합니다.
+문서·이슈·CI의 실제 등록 결과는 [현재 상태](../production/status.md)에 기록합니다. 이전 403 오류는 새 저장소가 앱 접근 목록에 없어서 발생했고, 사용자 설정 변경 후 해결됐습니다. 2026-09-07 사용자의 첫 배포 요청에 따라 Pages 워크플로를 구성했습니다. 실제 공개 여부는 현재 상태에서 확인합니다.
 
 GitHub Free에서도 public 저장소로 Pages를 사용할 수 있습니다. 공개 여부를 다시 바꾸거나 유료 서비스를 활성화하는 것은 이번 등록 작업에 포함하지 않습니다. [Pages 공식 안내](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages)
 
@@ -45,7 +45,15 @@ Vite의 production 산출물 `dist/`만 게시합니다. 현재 저장소 사이
 
 첫 게임 빌드부터 production preview를 검증하고, Pages 설정과 실제 게임이 준비되면 GitHub Actions로 배포합니다. Pages의 게시 사이트 크기 제한 1GB와 월 100GB 소프트 대역폭 제한을 고려합니다. 첫 필수 전송량 30MB 수준은 호스팅 한도와 별개인 우리 사용자 경험 목표입니다. [Pages 제한](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits)
 
-첫 배포는 수동 실행으로 경로와 저장·새로고침을 확인한 후, 승인된 `main` 변경에 자동 배포하는 흐름으로 전환할 수 있습니다. GitHub Pages에 PR별 독립 preview가 자동 생성된다고 가정하지 않습니다. PR에서는 로컬 production preview의 검증과 빌드 artifact를 사용하고 필요할 때 별도 preview 방식을 선택합니다.
+현재 Game checks는 `main`의 검증된 dist를 Pages artifact로 전달하고, 별도 배포 job에서 게시합니다. `release.json`의 커밋 SHA 일치 후 공개 URL에서도 BASIC-12/FIRST-SALE을 검사합니다. 저장은 아직 구현되지 않았으며 새로고침 초기화를 검사합니다. GitHub Pages에 PR별 독립 preview가 자동 생성된다고 가정하지 않습니다. PR에서는 로컬 production preview의 검증과 빌드 artifact를 사용하고 필요할 때 별도 preview 방식을 선택합니다.
+
+### 최초 활성화와 재시도
+
+최초 한 번 저장소 [Settings → Pages](https://github.com/dm-choo/pc-cafe-simulator/settings/pages)의 Build and deployment → Source를 **GitHub Actions**로 설정합니다. 현재 연결된 GitHub 도구에는 이 설정을 바꾸는 기능이 없습니다. 기본 GITHUB_TOKEN으로 Pages 최초 활성화를 우회하지 않습니다. [공식 입력 계약](https://github.com/actions/configure-pages/blob/main/action.yml)
+
+설정 후 실패한 Game checks 실행에서 **Re-run failed jobs**를 누르면 이미 검사·업로드한 빌드로 배포를 재시도할 수 있습니다. artifact가 만료됐다면 Actions → Game checks → Run workflow에서 main 전체를 다시 실행합니다. 배포가 성공하면 예상 기본 URL은 `https://dm-choo.github.io/pc-cafe-simulator/`입니다. URL 예상과 실제 성공을 구분하고 현재 상태에서 실제 실행을 확인합니다.
+
+배포 토큰은 GitHub가 job에 제공하며 소스·게임 빌드에 넣지 않습니다. 실패한 배포를 성공으로 표시하거나 PR 브랜치를 공개 환경에 게시하지 않습니다.
 
 ## 6. 복구
 
