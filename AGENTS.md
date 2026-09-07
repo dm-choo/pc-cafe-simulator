@@ -18,7 +18,12 @@
 
 - `python3 scripts/check_docs.py`: local documentation and JSON checks; Python 3.10+, standard library only.
 - `git diff --check`: whitespace check.
-- No game package exists yet. G001 must add and verify actual install/dev/build/test commands and update this section.
+- Node 24.19.0 (`.nvmrc`), `npm ci` installs the exact lockfile.
+- `npm run dev`: Vite; open `/pc-cafe-simulator/`.
+- `npm run build`: TypeScript check and production build; `npm run preview`: serve that build.
+- `npm run lint`: ESLint including sim dependency restrictions; `npm test`: clock/state/collision checks.
+- `npx playwright install --with-deps chromium`, then `npm run test:e2e`: BASIC-12 production browser checks.
+- `?debug=1` exposes read-only `window.__cafe.read()` and scene reset. See current status for actual browser results.
 - Do not report planned commands, CI, remote upload, browser tests, FPS, or playtests as completed.
 
 ## Architecture

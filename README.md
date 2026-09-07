@@ -2,7 +2,7 @@
 
 내 매장을 직접 돌보고, 손님을 이해하고, 투자와 직원 운영으로 성장시키는 1인칭 한국 PC방 경영 게임.
 
-**현재 단계: 개발 준비 문서·저장소 구성·초기 이슈 등록 완료. 게임 실행 코드는 아직 없습니다.** 저장소는 [dm-choo/pc-cafe-simulator](https://github.com/dm-choo/pc-cafe-simulator)입니다. 등록·검증 상태와 다음 작업은 [현재 상태](docs/production/status.md)에 기록합니다.
+**현재 단계: G001 — 12석 첫 매장 구현.** 이동·좌석 확인·카운터·배치 미리보기·설정을 사용할 수 있습니다. 고객·매출·저장은 아직 없습니다. 저장소는 [dm-choo/pc-cafe-simulator](https://github.com/dm-choo/pc-cafe-simulator)입니다. 등록·검증 상태와 다음 작업은 [현재 상태](docs/production/status.md)에 기록합니다.
 
 ## 개발 기준
 
@@ -26,22 +26,56 @@
 | 현실풍 에셋 제작·최적화 | [아트 제작](docs/art/pipeline.md), [품질 검증](docs/quality/validation.md) |
 | GitHub 협업·배포·복구 | [GitHub 운영](docs/development/github.md) |
 
-## 현재 실행할 수 있는 검증
+## 실행
 
-Python 3.10 이상, 외부 패키지 없이:
+Node **24.19.0** (`nvm use`)과 npm을 사용합니다.
 
 ```bash
+npm ci
+npm run dev
+```
+
+개발 주소: `http://localhost:5173/pc-cafe-simulator/`.
+
+```bash
+npm run build
+npm run preview
+```
+
+production preview: `http://localhost:4173/pc-cafe-simulator/`. GitHub Pages의 실제 저장소 하위 경로로 빌드합니다. 공개 배포 여부는 [현재 상태](docs/production/status.md)를 확인하세요.
+
+| 조작 | 행동 |
+| --- | --- |
+| WASD | 이동 |
+| 마우스 / 잠금 없이 드래그 / 방향키 | 둘러보기 |
+| E | 가까이 바라보는 좌석·카운터 확인 |
+| B | 위에서 보는 배치 미리보기 |
+| ESC / P | 일시정지 |
+
+배치 모드에서는 좌석을 선택한 뒤 마우스를 움직입니다. 벽·중앙 통로·다른 좌석과 겹치는 위치를 표시하며 **실제 배치는 바뀌지 않습니다**. 탭을 숨기거나 UI를 열면 시간이 멈춥니다. 현재는 PC 키보드·마우스용입니다.
+
+## 검사
+
+```bash
+npm run typecheck
+npm run lint
+npm test
+npm run build
+npx playwright install --with-deps chromium
+npm run test:e2e
 python3 scripts/check_docs.py
 git diff --check
 ```
 
-게임 개발 명령은 첫 작업 G001에서 구현합니다. 아직 `npm install`, `npm run dev`, `npm test`가 동작하는 프로젝트라고 보고하지 않습니다. 추후 기본 스택은 TypeScript + Vite + Three.js(WebGL2), React DOM UI, Blender GLB, IndexedDB입니다.
+`test:e2e`는 production preview를 자동 실행합니다. 이미 설치된 Chromium으로 검사할 환경은 `PLAYWRIGHT_CHROMIUM_EXECUTABLE`에 실행 파일 경로를 지정할 수 있습니다. 브라우저 결과는 `test-results/`, `playwright-report/`에 생성됩니다. `?debug=1`에서는 읽기 전용 진단과 메뉴의 개발 장면 초기화를 사용할 수 있습니다.
+
+현재 공간은 코드로 만든 임시 형상·재질입니다. 대표 현실풍 GLB 자산은 G003에서 같은 장면에 연결합니다.
 
 ## 에이전트 시작 지시
 
 ```text
-AGENTS.md와 docs/production/status.md를 읽고 G001을 진행해줘.
-docs/tasks/001-first-cafe.md의 범위와 완료 조건을 적용해줘.
+AGENTS.md와 docs/production/status.md를 읽고 다음 ready 작업을 진행해줘.
+해당 이슈의 범위와 완료 조건을 적용해줘.
 기존 변경을 확인한 뒤 구현하고, 브라우저에서 직접 실행해 검증해줘.
 결과·재현 방법·실행한 검사·남은 문제를 PR과 상태 문서에 남겨줘.
 현재 권한으로 가능한 작업은 끝까지 진행하고, 실행하지 못한 것은 구분해줘.
