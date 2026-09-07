@@ -31,6 +31,16 @@
       "usageTerms": "SIL Open Font License 1.1; public/assets/font-OFL.txt",
       "export": "Vite bundles fontsource WOFF2 subsets locally; no runtime CDN",
       "creator": "Noto project"
+    },
+    {
+      "id": "customer.g002.placeholder.v1",
+      "runtimePath": "src/render/customers.ts",
+      "source": "Original procedural character code in this repository",
+      "usageTerms": "Original project content; no external character assets. Public project license not yet selected.",
+      "units": "Meters, Y-up",
+      "animation": "Procedural walking arm/leg swing and seated pose; temporary G002 representation",
+      "collider": "Customer navigation uses src/sim/navigation.ts and static furniture clearance; no NPC-player physical collision",
+      "export": "Built at runtime; no GLB or Blender export performed"
     }
   ]
 }

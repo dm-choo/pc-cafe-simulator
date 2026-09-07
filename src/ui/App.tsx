@@ -60,6 +60,19 @@ function Panel({
 export function App({ engine }: { engine: Engine }) {
   const s = useSyncExternalStore(engine.subscribe, engine.getSnapshot);
   const resume = () => engine.start(false);
+  const state = s.game;
+  const occupied = Object.values(state.seats).filter(
+    (id) => id !== null,
+  ).length;
+  const trading = state.open
+    ? "영업 중"
+    : state.customers.length
+      ? "마감 중"
+      : "개점 준비";
+  const seatState = (id: string) => {
+    const c = state.customers.find((c) => c.id === state.seats[id]);
+    return c ? (c.phase === "using" ? "이용 중" : "이동 중") : "빈자리";
+  };
   return (
     <>
       <header className="hud">
@@ -70,12 +83,33 @@ export function App({ engine }: { engine: Engine }) {
           <span className="tag">첫 매장</span>
         </div>
         <div className="store-state">
-          <i /> 개점 준비 <span className="divider" /> 12석
+          <i /> {trading} <span className="divider" /> {occupied}/12석{" "}
+          <span className="divider" />
+          <strong aria-label="보유 현금">
+            {state.cash.toLocaleString()}원
+          </strong>
         </div>
       </header>
       {s.mode === "play" ? (
         <>
           <div className="crosshair" />
+          <aside className="business-hint">
+            <span>{state.notice}</span>
+            <div className="speed-controls" aria-label="영업 배속">
+              <button
+                aria-pressed={s.speed === 1}
+                onClick={() => engine.speed(1)}
+              >
+                1×
+              </button>
+              <button
+                aria-pressed={s.speed === 4}
+                onClick={() => engine.speed(4)}
+              >
+                4×
+              </button>
+            </div>
+          </aside>
           {s.target ? (
             <button className="interaction" onClick={engine.interact}>
               <kbd>E</kbd>
@@ -116,8 +150,8 @@ export function App({ engine }: { engine: Engine }) {
           <div className="chapter">
             <span>01</span>
             <div>
-              <strong>매장 둘러보기</strong>
-              <p>좌석 통로와 카운터를 확인하세요.</p>
+              <strong>첫 손님 맞이하기</strong>
+              <p>카운터에서 영업을 시작하세요.</p>
             </div>
           </div>
           <button className="primary" onClick={() => engine.start()}>
@@ -128,9 +162,9 @@ export function App({ engine }: { engine: Engine }) {
             <button onClick={engine.settings}>설정</button>
           </div>
           <p className="footnote">
-            개발 중 · 첫 공간과 조작을 확인하는 버전입니다.
+            개발 중 · 첫 손님과 첫 매출까지 플레이할 수 있습니다.
             <br />
-            손님과 영업 기능은 다음 업데이트에 추가됩니다.
+            새로고침하면 진행이 초기화됩니다.
           </p>
           <p className="mobile-note">
             현재 버전은 키보드와 마우스가 있는 PC에서 플레이하세요.
@@ -173,7 +207,7 @@ export function App({ engine }: { engine: Engine }) {
           <p className="intro">우리 매장의 하루가 시작되는 자리.</p>
           <div className="summary-row">
             <span>영업 상태</span>
-            <strong>개점 준비</strong>
+            <strong>{trading}</strong>
           </div>
           <div className="summary-row">
             <span>설치된 좌석</span>
@@ -181,24 +215,48 @@ export function App({ engine }: { engine: Engine }) {
           </div>
           <div className="seat-grid">
             {SEATS.map((seat) => (
-              <span key={seat.id}>
+              <span
+                key={seat.id}
+                className={state.seats[seat.id] === null ? "" : "occupied"}
+                title={`${seat.id}번 ${seatState(seat.id)}`}
+              >
                 {seat.id}
                 <i />
               </span>
             ))}
           </div>
+          <div className="summary-row">
+            <span>누적 매출 · 결제 완료</span>
+            <strong>
+              {state.cash.toLocaleString()}원 · {state.served}명
+            </strong>
+          </div>
+          {state.receipts.length ? (
+            <p className="receipt" aria-label="최근 결제">
+              최근 결제 · {state.receipts.at(-1)!.seatId}번 자리 +
+              {state.receipts.at(-1)!.amount.toLocaleString()}원
+            </p>
+          ) : null}
           <p className="footnote">
-            현재는 매장 점검 단계입니다. 손님 접수와 매출 정산은 다음 업데이트에
-            연결됩니다.
+            시험 요금: 1시간 1,500원 · 약 40초 이용 후 자동 결제. 실제 시장
+            가격이 아닌 개발용 밸런스 값입니다.
           </p>
-          <button className="primary" onClick={resume}>
+          <button
+            className="primary"
+            onClick={state.open ? engine.closeCafe : engine.openCafe}
+          >
+            {state.open ? "신규 입장 중지" : "영업 시작"}
+          </button>
+          <button className="wide" onClick={resume}>
             점검 계속하기 <span>→</span>
           </button>
         </Panel>
       ) : null}
       {s.mode === "seat" ? (
         <Panel title={`${s.selectedSeat}번 좌석`} close={resume}>
-          <span className="seat-tag">STANDARD / 기본석</span>
+          <span className="seat-tag">
+            STANDARD / 기본석 · {seatState(s.selectedSeat!)}
+          </span>
           <p className="intro">
             책상, 모니터, 본체와 의자가
             <br />

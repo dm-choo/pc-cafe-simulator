@@ -1,6 +1,6 @@
 # 제작 순서와 초기 백로그
 
-같은 게임에 기능과 품질을 누적합니다. 아래는 작업 지시의 원본이며 **G001~G009를 GitHub 이슈로 등록했습니다.** `G번호`는 내부 ID이고 실제 이슈는 아래 표로 연결합니다. 이슈 등록은 구현 완료를 뜻하지 않습니다. G001의 구현·검증 진행 상태는 [현재 상태](status.md)를 확인합니다. G002 이후는 미구현입니다.
+같은 게임에 기능과 품질을 누적합니다. 아래는 작업 지시의 원본이며 **G001~G009를 GitHub 이슈로 등록했습니다.** `G번호`는 내부 ID이고 실제 이슈는 아래 표로 연결합니다. 이슈 등록은 구현 완료를 뜻하지 않습니다. G001의 구현·검증 진행 상태는 [현재 상태](status.md)를 확인합니다. G002 첫 손님·첫 매출은 구현·검증 완료(PR #12)이고 G003 이후는 미구현입니다.
 
 ## 1. 마일스톤
 
@@ -36,8 +36,8 @@
 
 | 작업 | 이슈 | 시작 상태 |
 | --- | --- | --- |
-| G001 | [#1](https://github.com/dm-choo/pc-cafe-simulator/issues/1) | 구현·검증 완료 / PR #11 |
-| G002 | [#2](https://github.com/dm-choo/pc-cafe-simulator/issues/2) | 선행 작업 후 진행 |
+| G001 | [#1](https://github.com/dm-choo/pc-cafe-simulator/issues/1) | main 통합 완료 / PR #11 |
+| G002 | [#2](https://github.com/dm-choo/pc-cafe-simulator/issues/2) | 구현·검증 완료, PR #12 |
 | G003 | [#3](https://github.com/dm-choo/pc-cafe-simulator/issues/3) | 선행 작업 후 진행 |
 | G004 | [#4](https://github.com/dm-choo/pc-cafe-simulator/issues/4) | 선행 작업 후 진행 |
 | G005 | [#5](https://github.com/dm-choo/pc-cafe-simulator/issues/5) | 선행 작업 후 진행 |
