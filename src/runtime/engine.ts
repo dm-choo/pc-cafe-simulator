@@ -74,7 +74,7 @@ export async function createEngine(canvas: HTMLCanvasElement) {
   const keyLight = new THREE.DirectionalLight("#ffedd4", 1.8);
   keyLight.position.set(-2, 3.08, 1);
   keyLight.castShadow = true;
-  // G001 furniture is static. Re-render this map when geometry starts moving in G002.
+  // Refresh only after installation or while customers animate.
   keyLight.shadow.autoUpdate = false;
   keyLight.shadow.needsUpdate = true;
   keyLight.shadow.mapSize.set(1024, 1024);
@@ -133,6 +133,7 @@ export async function createEngine(canvas: HTMLCanvasElement) {
     lastUI = 0,
     dragging = false,
     running = true,
+    renderDirty = true,
     hadCustomers = false;
   let target: THREE.Mesh | undefined,
     settingsReturn: Mode = "pause";
@@ -166,6 +167,7 @@ export async function createEngine(canvas: HTMLCanvasElement) {
   const send = (action: Command) => {
     const before = game;
     game = command(game, action);
+    renderDirty = true;
     if (before.seats !== game.seats || before.counter !== game.counter) {
       const ids = Object.keys(game.seats);
       // Only rebuild colliders/render instances when the installation set changes.
@@ -180,6 +182,7 @@ export async function createEngine(canvas: HTMLCanvasElement) {
   };
   const blocked = () => snapshot.mode !== "play" || document.hidden;
   const setMode = (mode: Mode) => {
+    renderDirty = true;
     keys.clear();
     dragging = false;
     clock.reset();
@@ -209,11 +212,12 @@ export async function createEngine(canvas: HTMLCanvasElement) {
     }
   };
   function resize() {
+    renderDirty = true;
     const w = innerWidth,
       h = innerHeight;
     renderer.setSize(w, h);
     renderer.setPixelRatio(
-      Math.min(devicePixelRatio, snapshot.quality === "low" ? 1 : 1.5),
+      Math.min(devicePixelRatio, snapshot.quality === "low" ? 0.75 : 1.5),
     );
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
@@ -435,6 +439,9 @@ export async function createEngine(canvas: HTMLCanvasElement) {
       );
     });
     if (document.hidden || snapshot.mode === "error") return;
+    // Menus pause the world. Redraw only for mode/placement/quality/resize changes;
+    // keep the clocks above running so blocked wall time is never replayed.
+    if (blocked() && !renderDirty) return;
     const pos = physics.position();
     const blend = snapshot.mode === "play" ? 1 - Math.exp(-30 * dt) : 1;
     camera.position.x += (pos.x - camera.position.x) * blend;
@@ -472,6 +479,7 @@ export async function createEngine(canvas: HTMLCanvasElement) {
       keyLight.shadow.needsUpdate = true;
     hadCustomers = game.customers.length > 0;
     renderer.render(scene, snapshot.mode === "layout" ? overhead : camera);
+    renderDirty = false;
     if (now - lastUI > 250) {
       lastUI = now;
       publish({

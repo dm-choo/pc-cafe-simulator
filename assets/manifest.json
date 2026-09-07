@@ -17,12 +17,12 @@
     {
       "id": "materials.polyhaven.1k.v1",
       "runtimePath": "src/render/materials.ts",
-      "source": "https://polyhaven.com/a/wood_table_worn ; https://polyhaven.com/a/plastered_wall_03 ; https://polyhaven.com/a/worn_concrete_floor",
+      "source": "https://polyhaven.com/a/wood_table_worn ; https://polyhaven.com/a/plastered_wall_03 ; https://polyhaven.com/a/concrete_floor_worn_001",
       "usageTerms": "CC0: https://polyhaven.com/license ; public/assets/material-credits.txt",
       "sourceVersion": "Pinned provider file hashes in assets/materials.json",
       "export": "scripts/assets/fetch-materials.mjs downloads and verifies 9 JPEG maps during assets:build; Vite serves generated files locally",
       "generatedPath": "public/assets/generated/materials/",
-      "sizeBytes": 5961103,
+      "sizeBytes": 3963365,
       "textures": "1K diffuse sRGB, normal GL linear, roughness linear; 3 shared materials"
     },
     {

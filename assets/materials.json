@@ -5,6 +5,6 @@
   "sets": [
     {"id":"wood_table_worn","name":"wood","source":"https://polyhaven.com/a/wood_table_worn","authors":"Dimitrios Savva, Rico Cilliers","maps":{"diff":"8c71f701f70fef34b87fb7c8742ad0a5","nor_gl":"d8e76d135e94e32bc81eedb3342c7614","rough":"1e068051a440933d9d054dc6614f950f"}},
     {"id":"plastered_wall_03","name":"plaster","source":"https://polyhaven.com/a/plastered_wall_03","maps":{"diff":"0113b3562589857b4eb11400b228b8d5","nor_gl":"741679fed0b19fc4ae3d76eeb14ebde2","rough":"e1fa4ca9db73976014f36bf26ef5719f"}},
-    {"id":"worn_concrete_floor","name":"concrete","source":"https://polyhaven.com/a/worn_concrete_floor","maps":{"diff":"6b241d60554ece1c6977c4730d156164","nor_gl":"3fb929ff6a9fc3b8d09d33bb00313fb1","rough":"6be386d84933875589966b376fcb2b69"}}
+    {"id":"concrete_floor_worn_001","name":"concrete","source":"https://polyhaven.com/a/concrete_floor_worn_001","authors":"Dimitrios Savva, Rico Cilliers","maps":{"diff":"e35597cca586150b1ab2aa9a331a39c5","nor_gl":"9de6626758f8793b71182b892c110827","rough":"b158eae73029ac6a849481274a0e1b35"}}
   ]
 }

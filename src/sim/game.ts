@@ -106,7 +106,7 @@ export function command(state: GameState, action: Command): GameState {
       if (!SEATS.some(s => s.id === action.seatId) || action.seatId in state.seats || state.inventory.seat < 1) return state;
       return { ...state, seats: { ...state.seats, [action.seatId]: null },
         inventory: { ...state.inventory, seat: state.inventory.seat - 1 },
-        selectedSeat: action.seatId, notice: `${action.seatId}번 좌석 설치 완료 · 카운터에서 영업을 시작하세요` };
+        selectedSeat: action.seatId, notice: `${action.seatId}번 좌석 설치 완료 · ${state.counter ? "카운터에서 영업을 시작하세요" : "카운터도 설치하면 영업할 수 있습니다"}` };
     }
     case "reset":
       return createGame();

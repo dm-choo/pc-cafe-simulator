@@ -16,7 +16,7 @@ export async function loadMaterials() {
   const [wood, plaster, concrete] = await Promise.all([
     material("wood", [1, 1], "#d8b795", .3),
     material("plaster", [3, 1], "#c6c5bf", .3),
-    material("concrete", [4, 5.6], "#a4aaac", .4),
+    material("concrete", [3.33, 4.67], "#b5bbbe", .25),
   ]);
   return { wood, plaster, concrete, dispose() {
     textures.forEach(t => t.dispose());
