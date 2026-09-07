@@ -1,6 +1,13 @@
 import * as THREE from "three";
 import { SEATS, SPAWN } from "../content/cafe";
-import { createGame, command, step, type Command } from "../sim/game";
+import {
+  createGame,
+  command,
+  step,
+  type Command,
+  type GameState,
+} from "../sim/game";
+import { createCustomerView } from "../render/customers";
 import { buildCafe } from "../render/cafe";
 import { placementReason } from "../sim/layout";
 import { FixedClock } from "./clock";
@@ -16,6 +23,8 @@ export type Mode =
   | "error";
 export type Snapshot = Readonly<{
   mode: Mode;
+  game: GameState;
+  speed: 1 | 4;
   tick: number;
   target: string | null;
   selectedSeat: string | null;
@@ -48,6 +57,7 @@ export async function createEngine(canvas: HTMLCanvasElement) {
   const scene = new THREE.Scene();
   scene.fog = new THREE.Fog("#303d41", 12, 29);
   const cafe = buildCafe(scene);
+  const customerView = createCustomerView(scene);
   scene.add(new THREE.HemisphereLight("#dbe9f1", "#787167", 2.1));
   const keyLight = new THREE.DirectionalLight("#ffedd4", 3.1);
   keyLight.position.set(-2, 6, 4);
@@ -104,18 +114,22 @@ export async function createEngine(canvas: HTMLCanvasElement) {
   const listeners = new Set<() => void>(),
     keys = new Set<string>(),
     events = new AbortController(),
-    clock = new FixedClock();
+    clock = new FixedClock(),
+    playerClock = new FixedClock();
   let game = createGame(),
     yaw = SPAWN.yaw,
     pitch = -0.025,
     previous = 0,
     lastUI = 0,
     dragging = false,
-    running = true;
+    running = true,
+    hadCustomers = false;
   let target: THREE.Mesh | undefined,
     settingsReturn: Mode = "pause";
   let snapshot: Snapshot = {
     mode: "welcome",
+    game,
+    speed: 1,
     tick: 0,
     target: null,
     selectedSeat: null,
@@ -134,6 +148,7 @@ export async function createEngine(canvas: HTMLCanvasElement) {
       ...snapshot,
       ...change,
       tick: game.tick,
+      game,
       selectedSeat: game.selectedSeat,
     };
     listeners.forEach((fn) => fn());
@@ -147,6 +162,7 @@ export async function createEngine(canvas: HTMLCanvasElement) {
     keys.clear();
     dragging = false;
     clock.reset();
+    playerClock.reset();
     cafe.ceiling.visible = mode !== "layout";
     ghost.visible = false;
     ring.visible = false;
@@ -221,6 +237,7 @@ export async function createEngine(canvas: HTMLCanvasElement) {
     "visibilitychange",
     () => {
       clock.reset();
+      playerClock.reset();
       keys.clear();
       if (document.hidden && snapshot.mode === "play") setMode("pause");
     },
@@ -282,6 +299,10 @@ export async function createEngine(canvas: HTMLCanvasElement) {
         }
       }
       if (e.repeat) return;
+      if (snapshot.mode === "play" && ["Digit1", "Digit4"].includes(e.code)) {
+        publish({ speed: e.code === "Digit1" ? 1 : 4 });
+        clock.reset();
+      }
       if (e.code === "KeyE") interact();
       if (e.code === "KeyB" && snapshot.mode === "play") setMode("layout");
       if (e.code === "KeyP" && snapshot.mode === "play") setMode("pause");
@@ -361,11 +382,14 @@ export async function createEngine(canvas: HTMLCanvasElement) {
     },
   );
   function reset() {
+    customerView.clear();
+    keyLight.shadow.needsUpdate = true;
     physics.reset();
     yaw = SPAWN.yaw;
     pitch = -0.025;
     send({ type: "reset" });
     clock.reset();
+    playerClock.reset();
     setMode("pause");
   }
   function frame(now: number) {
@@ -373,8 +397,15 @@ export async function createEngine(canvas: HTMLCanvasElement) {
     requestAnimationFrame(frame);
     const dt = Math.min(Math.max((now - previous) / 1000, 0), 0.05);
     previous = now;
-    const lag = clock.advance(now, blocked(), () => {
-      game = step(game);
+    const lag = clock.advance(
+      now,
+      blocked(),
+      () => {
+        game = step(game);
+      },
+      snapshot.speed,
+    );
+    playerClock.advance(now, blocked(), () => {
       yaw +=
         (Number(keys.has("ArrowLeft")) - Number(keys.has("ArrowRight"))) *
         0.05 *
@@ -423,6 +454,10 @@ export async function createEngine(canvas: HTMLCanvasElement) {
       ring.visible = !!selected;
       if (selected) ring.position.set(selected.x, 1.4, selected.z);
     }
+    customerView.update(game, dt);
+    if (game.customers.length || hadCustomers)
+      keyLight.shadow.needsUpdate = true;
+    hadCustomers = game.customers.length > 0;
     renderer.render(scene, snapshot.mode === "layout" ? overhead : camera);
     if (now - lastUI > 250) {
       lastUI = now;
@@ -444,6 +479,18 @@ export async function createEngine(canvas: HTMLCanvasElement) {
       };
     },
     getSnapshot: () => snapshot,
+    openCafe: () => {
+      send({ type: "open" });
+      start(false);
+    },
+    closeCafe: () => {
+      send({ type: "close" });
+      start(false);
+    },
+    speed: (speed: 1 | 4) => {
+      publish({ speed });
+      clock.reset();
+    },
     start,
     interact,
     pause: () => setMode("pause"),
@@ -471,6 +518,8 @@ export async function createEngine(canvas: HTMLCanvasElement) {
     },
     reset,
     diagnostics: () => ({
+      game,
+      speed: snapshot.speed,
       tick: game.tick,
       position: { ...physics.position() },
       yaw,
@@ -484,6 +533,7 @@ export async function createEngine(canvas: HTMLCanvasElement) {
     }),
     dispose() {
       running = false;
+      customerView.dispose();
       events.abort();
       if (document.pointerLockElement === canvas) document.exitPointerLock();
       const geometries = new Set<THREE.BufferGeometry>(),

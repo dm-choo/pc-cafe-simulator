@@ -525,3 +525,62 @@ select {
     margin-top: 10px;
   }
 }
+
+.business-hint {
+  position: absolute;
+  top: 85px;
+  left: 36px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  max-width: calc(100% - 72px);
+  background: #182027dc;
+  padding: 12px 15px;
+  border: 1px solid #bdd8c51a;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #d5e2d8;
+}
+.speed-controls {
+  display: flex;
+  gap: 5px;
+}
+.speed-controls button {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 3px;
+  background: #ffffff0d;
+}
+.speed-controls button[aria-pressed="true"] {
+  background: #bbd5c4;
+  color: #17271d;
+}
+.seat-grid .occupied {
+  background: #769b874d;
+  border-color: #adcbbd77;
+}
+.seat-grid .occupied i {
+  background: #dcefdc;
+}
+.receipt {
+  padding: 12px;
+  background: #87ba9615;
+  color: #c3dfca;
+  font-size: 12px;
+  margin-bottom: 0;
+}
+@media (max-width: 760px) {
+  .business-hint {
+    left: 20px;
+    top: 68px;
+    max-width: calc(100% - 40px);
+    font-size: 10px;
+    gap: 8px;
+  }
+  .store-state {
+    gap: 5px;
+  }
+  .store-state .divider {
+    margin: 0 2px;
+  }
+}
