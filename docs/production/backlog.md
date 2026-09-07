@@ -36,7 +36,7 @@
 
 | 작업 | 이슈 | 시작 상태 |
 | --- | --- | --- |
-| G001 | [#1](https://github.com/dm-choo/pc-cafe-simulator/issues/1) | 구현·검증 중 |
+| G001 | [#1](https://github.com/dm-choo/pc-cafe-simulator/issues/1) | 구현·검증 완료 / PR #11 |
 | G002 | [#2](https://github.com/dm-choo/pc-cafe-simulator/issues/2) | 선행 작업 후 진행 |
 | G003 | [#3](https://github.com/dm-choo/pc-cafe-simulator/issues/3) | 선행 작업 후 진행 |
 | G004 | [#4](https://github.com/dm-choo/pc-cafe-simulator/issues/4) | 선행 작업 후 진행 |

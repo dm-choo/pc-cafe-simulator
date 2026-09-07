@@ -1,6 +1,6 @@
 # G001: 브라우저에서 첫 매장을 걸어 다니기
 
-상태: **구현 완료, 브라우저 검증 진행 중**. GitHub 이슈: [#1](https://github.com/dm-choo/pc-cafe-simulator/issues/1). 선행 기능 없음.
+상태: **구현·기술 검증 완료, PR #11 검토 가능**. GitHub 이슈: [#1](https://github.com/dm-choo/pc-cafe-simulator/issues/1). 선행 기능 없음.
 
 ## 목적
 
@@ -47,3 +47,5 @@
 
 - 2026-09-07: 요구사항·설계·작업 템플릿 작성. 게임 코드는 아직 시작하지 않았습니다.
 - 2026-09-07: feat/g001-first-cafe에서 구현. 상태·검증 결과는 [현재 상태](../production/status.md)를 확인합니다.
+
+- 최종 코드 `0cd9070`: GitHub Actions의 브라우저 3개·규칙 6개 통과. [검증 기록](../quality/evidence/g001.md). 사람 재미·최종 아트·목표 GPU 성능은 이 작업의 완료 주장에 포함하지 않습니다.
