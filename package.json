@@ -13,7 +13,10 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src tests *.ts",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "assets:build": "node scripts/assets/build-seat.mjs",
+    "predev": "npm run assets:build",
+    "prebuild": "npm run assets:build"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "0.20.0",

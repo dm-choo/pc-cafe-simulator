@@ -21,6 +21,8 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+      - name: Stamp release identity
+        run: node -e 'require("fs").writeFileSync("dist/release.json",JSON.stringify({sha:process.env.GITHUB_SHA,run:process.env.GITHUB_RUN_ID}))'
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -35,4 +37,67 @@ jobs:
         with:
           name: game-web-build
           path: dist/
+          retention-days: 14
+      - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        with:
+          path: dist/
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: basic-12
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
+      - name: Deploy verified build
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
+      - name: Check public release identity
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          for attempt in $(seq 1 12); do
+            if curl --fail --silent --show-error "${PAGE_URL}release.json?sha=${RELEASE_SHA}" -o release.json && node -e 'const fs=require("fs"); if(JSON.parse(fs.readFileSync("release.json")).sha!==process.env.RELEASE_SHA)process.exit(1)'; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo 'Public release identity did not match deployed commit.' >&2
+          exit 1
+  public-smoke:
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+        env:
+          PLAYWRIGHT_BASE_URL: https://dm-choo.github.io/pc-cafe-simulator/
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: public-play-evidence
+          path: |
+            playwright-report/
+            test-results/
           retention-days: 14

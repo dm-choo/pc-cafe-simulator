@@ -38,9 +38,23 @@
       "source": "Original procedural character code in this repository",
       "usageTerms": "Original project content; no external character assets. Public project license not yet selected.",
       "units": "Meters, Y-up",
-      "animation": "Procedural walking arm/leg swing and seated pose; temporary G002 representation",
+      "animation": "Shared procedural articulated knees/elbows and blended seated pose; no foot IK or authored animation clips",
       "collider": "Customer navigation uses src/sim/navigation.ts and static furniture clearance; no NPC-player physical collision",
       "export": "Built at runtime; no GLB or Blender export performed"
+    },
+    {
+      "id": "seat.standard.02",
+      "runtimePath": "src/render/seat-asset.ts",
+      "source": "Original scripts/assets/build-seat.mjs; code-authored model, no Blender export",
+      "usageTerms": "Original project content; no external art. Public license not yet selected.",
+      "generatedPath": "public/assets/generated/seat-standard.glb",
+      "export": "npm run assets:build; Three.js GLTFExporter 0.185.1; runs before dev/build",
+      "sizeBytes": 172156,
+      "triangles": 4080,
+      "materials": 5,
+      "units": "meters, Y-up, front +Z",
+      "collider": "src/content/cafe.ts static proxies; seat point 0,0.55,0.8",
+      "lod": "Shared geometry and 5 instanced material batches, no LOD yet"
     }
   ]
 }

@@ -13,3 +13,5 @@ __pycache__/
 *.blend2
 .DS_Store
 Thumbs.db
+
+public/assets/generated/

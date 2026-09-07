@@ -35,8 +35,7 @@ export function buildCafe(scene: THREE.Scene) {
   const graphite = mat("#232b30"),
     desk = mat("#39302b", 0.62),
     edge = mat("#0e151b", 0.4, 0.45);
-  const fabric = mat("#303a3d"),
-    trim = mat("#adbbb9", 0.35, 0.7),
+  const trim = mat("#adbbb9", 0.35, 0.7),
     wall = mat("#87827b");
   const warm = mat("#ddc0a1"),
     dark = mat("#141e25"),
@@ -187,29 +186,6 @@ export function buildCafe(scene: THREE.Scene) {
   const proxyMat = new THREE.MeshBasicMaterial({ visible: false });
   materials.push(proxyMat);
   for (const seat of SEATS) {
-    const p = (
-      m: THREE.Material,
-      x: number,
-      y: number,
-      z: number,
-      w: number,
-      h: number,
-      d: number,
-      cylinder = false,
-    ) => {
-      const v = localPoint(seat, x, z);
-      part(m, v.x, y, v.z, w, h, d, seat.rotation, cylinder);
-    };
-    p(desk, 0, 0.745, 0, 1.38, 0.065, 0.76);
-    p(edge, 0, 0.702, 0.35, 1.38, 0.025, 0.03);
-    for (const x of [-0.62, 0.62]) {
-      p(graphite, x, 0.35, -0.25, 0.055, 0.7, 0.055);
-      p(graphite, x, 0.35, 0.26, 0.055, 0.7, 0.055);
-    }
-    p(graphite, -0.71, 0.99, -0.04, 0.035, 0.5, 0.8);
-    p(edge, 0, 1.12, -0.16, 0.69, 0.41, 0.045);
-    p(trim, 0, 0.87, -0.18, 0.035, 0.18, 0.035);
-    p(edge, 0, 0.79, -0.12, 0.22, 0.015, 0.17);
     const screen = new THREE.Mesh(
       new THREE.PlaneGeometry(0.65, 0.366),
       screenMat,
@@ -218,32 +194,6 @@ export function buildCafe(scene: THREE.Scene) {
     screen.position.set(pos.x, 1.12, pos.z);
     screen.rotation.y = seat.rotation;
     screens.add(screen);
-    p(dark, -0.02, 0.784, 0.19, 0.62, 0.008, 0.26);
-    p(edge, -0.1, 0.8, 0.18, 0.4, 0.018, 0.14);
-    for (let row = 0; row < 4; row++)
-      for (let key = 0; key < 12; key++)
-        p(
-          trim,
-          -0.276 + key * 0.031,
-          0.812,
-          0.128 + row * 0.028,
-          0.022,
-          0.007,
-          0.02,
-        );
-    p(graphite, 0.26, 0.802, 0.19, 0.055, 0.03, 0.085);
-    p(edge, 0.52, 0.99, -0.03, 0.19, 0.42, 0.39);
-    p(teal, 0.52, 1, 0.174, 0.045, 0.045, 0.009, true);
-    p(fabric, 0, 0.49, 0.81, 0.53, 0.13, 0.5);
-    p(fabric, 0, 0.91, 1.05, 0.51, 0.7, 0.12);
-    p(edge, 0, 1.25, 1.06, 0.34, 0.17, 0.13);
-    p(trim, 0, 0.25, 0.81, 0.045, 0.4, 0.045, true);
-    p(edge, 0, 0.1, 0.81, 0.61, 0.05, 0.06);
-    p(edge, 0, 0.1, 0.81, 0.06, 0.05, 0.61);
-    for (const side of [-1, 1]) {
-      p(edge, side * 0.29, 0.68, 0.83, 0.045, 0.05, 0.36);
-      p(edge, side * 0.29, 0.58, 0.95, 0.035, 0.2, 0.035);
-    }
     const labelPos = localPoint(seat, -0.48, 0.385);
     sign(
       seat.id,
