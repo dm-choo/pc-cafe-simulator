@@ -1,0 +1,22 @@
+name: 게임 오류
+description: 재현 가능한 오류를 기록합니다.
+title: "[Bug] "
+body:
+  - type: textarea
+    id: environment
+    attributes:
+      label: 실행 환경
+      description: 커밋·배포 버전, 브라우저, 해상도, 품질, 배속, 장면/seed.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 재현 순서·기대한 결과·실제 결과
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 증거와 영향
+      description: 화면·로그·세이브 손실 여부. 민감한 정보나 비밀 키를 첨부하지 않습니다.
